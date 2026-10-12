@@ -1,4 +1,5 @@
 import { SavedPreset } from '../types/effects';
+import { invoke } from '@tauri-apps/api/core';
 import { DEFAULT_AURORA_PARAMS } from '../engine/effects/aurora';
 import { DEFAULT_RIPPLE_PARAMS } from '../engine/effects/ripple';
 import { DEFAULT_GLITCH_PARAMS } from '../engine/effects/glitch';
@@ -265,37 +266,74 @@ export const FACTORY_PRESETS: SavedPreset[] = [
   },
 ];
 
+export function mergeWithFactoryPresets(parsed: any[]): SavedPreset[] {
+  if (!Array.isArray(parsed)) return FACTORY_PRESETS;
+  const factoryMap = new Map<string, SavedPreset>(FACTORY_PRESETS.map((p) => [p.id, p]));
+  const userCustomPresets: SavedPreset[] = [];
+  for (const item of parsed) {
+    if (!item || !item.id) continue;
+    if (factoryMap.has(item.id)) {
+      // If user customized a factory preset, retain user's version
+      factoryMap.set(item.id, item);
+    } else {
+      userCustomPresets.push(item);
+    }
+  }
+  return [...userCustomPresets, ...Array.from(factoryMap.values())];
+}
+
 export function loadPresets(): SavedPreset[] {
   if (typeof window === 'undefined') return FACTORY_PRESETS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return FACTORY_PRESETS;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      const factoryMap = new Map<string, SavedPreset>(FACTORY_PRESETS.map((p) => [p.id, p]));
-      const userCustomPresets: SavedPreset[] = [];
-      for (const item of parsed) {
-        if (!item || !item.id) continue;
-        if (factoryMap.has(item.id)) {
-          // If user customized a factory preset, retain user's version
-          factoryMap.set(item.id, item);
-        } else {
-          userCustomPresets.push(item);
-        }
-      }
-      return [...userCustomPresets, ...Array.from(factoryMap.values())];
-    }
+    return mergeWithFactoryPresets(parsed);
   } catch (e) {
     console.warn('Failed to parse saved presets:', e);
   }
   return FACTORY_PRESETS;
 }
 
+export async function loadPresetsAsync(): Promise<SavedPreset[]> {
+  try {
+    const raw = await invoke<string | null>('load_persistent_presets');
+    if (raw && raw.trim() !== '' && raw.trim() !== '[]') {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const merged = mergeWithFactoryPresets(parsed);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch {}
+        return merged;
+      }
+    }
+  } catch (err) {
+    console.warn('Persistent presets not loaded from disk:', err);
+  }
+
+  // Fallback to local storage
+  const local = loadPresets();
+  // Migrate existing presets to disk
+  try {
+    await invoke('save_persistent_presets', { presetsJson: JSON.stringify(local) });
+  } catch {}
+  return local;
+}
+
 export function savePresets(presets: SavedPreset[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    const jsonStr = JSON.stringify(presets);
+    try {
+      localStorage.setItem(STORAGE_KEY, jsonStr);
+    } catch {}
+
+    void invoke('save_persistent_presets', { presetsJson: jsonStr }).catch((err) => {
+      console.warn('Failed to write presets to disk:', err);
+    });
   } catch (e) {
     console.error('Failed to save presets:', e);
   }
 }
+

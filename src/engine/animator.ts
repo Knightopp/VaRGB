@@ -21,9 +21,26 @@ export class AnimationEngine {
   private lastHardwarePushTime: number = 0;
   private hardwareIntervalMs: number = 33; // ~30 fps cap for USB transmission
   private inputUnsubscribe: (() => void) | null = null;
+  private backgroundTimerId: number | null = null;
 
   constructor(private keys: KeyDefinition[] = K630_LAYOUT) {
     this.setupKeyEventListener();
+    this.setupVisibilityListener();
+  }
+
+  private setupVisibilityListener(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (this.isRunning && !this.isPaused) {
+          this.lastTimestamp = performance.now();
+          if (document.hidden) {
+            this.startBackgroundLoop();
+          } else if (this.animFrameId === null) {
+            this.animFrameId = requestAnimationFrame(this.tick);
+          }
+        }
+      });
+    }
   }
 
   private setupKeyEventListener(): void {
@@ -68,11 +85,28 @@ export class AnimationEngine {
     this.isPaused = false;
     this.lastTimestamp = performance.now();
     this.accumulatedTime = 0;
+    this.startBackgroundLoop();
     this.tick(this.lastTimestamp);
+  }
+
+  private startBackgroundLoop(): void {
+    if (this.backgroundTimerId !== null || typeof window === 'undefined') return;
+    this.backgroundTimerId = window.setInterval(() => {
+      if (!this.isRunning || this.isPaused) return;
+      const now = performance.now();
+      // Keep streaming to hardware at target interval if RAF throttles/stops in background
+      if (now - this.lastTimestamp >= this.hardwareIntervalMs * 0.95) {
+        this.tick(now);
+      }
+    }, Math.max(16, Math.floor(this.hardwareIntervalMs)));
   }
 
   public pause(): void {
     this.isPaused = true;
+    if (this.backgroundTimerId !== null) {
+      clearInterval(this.backgroundTimerId);
+      this.backgroundTimerId = null;
+    }
   }
 
   public resume(): void {
@@ -82,11 +116,16 @@ export class AnimationEngine {
     }
     this.isPaused = false;
     this.lastTimestamp = performance.now();
+    this.startBackgroundLoop();
   }
 
   public stop(): void {
     this.isRunning = false;
     this.isPaused = false;
+    if (this.backgroundTimerId !== null) {
+      clearInterval(this.backgroundTimerId);
+      this.backgroundTimerId = null;
+    }
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;

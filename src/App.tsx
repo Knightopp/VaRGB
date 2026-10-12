@@ -17,8 +17,8 @@ import { DEFAULT_AURORA_PARAMS } from './engine/effects/aurora';
 import { PixelArtEffect } from './engine/effects/pixelArt';
 import { DEFAULT_MUSIC_PULSE_PARAMS, toAudioAnalyzerConfig } from './engine/effects/musicPulse';
 import { hardwareService, DeviceInfo } from './services/hardware';
-import { loadPresets, savePresets } from './services/presets';
-import { loadSettings, saveSettings, DEFAULT_ACTIVE_PRESETS } from './services/settings';
+import { loadPresets, savePresets, loadPresetsAsync } from './services/presets';
+import { loadSettings, saveSettings, DEFAULT_ACTIVE_PRESETS, loadSettingsAsync } from './services/settings';
 import { LiquidChrome } from './components/LiquidChrome';
 import { Dock, DockItemData } from './components/Dock';
 import { K630_LAYOUT } from './engine/layout';
@@ -110,9 +110,12 @@ export const App: React.FC = () => {
 
   // Animation Engine Ref
   const animatorRef = useRef<AnimationEngine | null>(null);
+  const isHydratedRef = useRef<boolean>(false);
+  const [isStartupEnabled, setIsStartupEnabled] = useState<boolean>(false);
 
   // Persist settings whenever user changes them so next launch restores exact state
   useEffect(() => {
+    if (!isHydratedRef.current) return;
     saveSettings({
       activeTab,
       currentEffectType,
@@ -130,13 +133,11 @@ export const App: React.FC = () => {
 
   // Initialize engine and presets on mount
   useEffect(() => {
-    const loaded = loadPresets();
-    setPresets(loaded);
-
-    // Auto-register only the installed production app; never register the dev server executable.
-    if (import.meta.env.PROD && typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      void invoke('enable_startup_launch')
-        .catch((error) => console.error('Could not enable Windows startup launch:', error));
+    // Check Windows autostart state
+    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+      void invoke<boolean>('is_startup_launch_enabled')
+        .then((enabled) => setIsStartupEnabled(enabled))
+        .catch(() => undefined);
     }
 
     const engine = new AnimationEngine();
@@ -148,7 +149,7 @@ export const App: React.FC = () => {
     });
     hardwareService.setHardwareEnabled(initialSettings.hardwareEnabled);
 
-    // Initial effect restored from active preset
+    // Initial effect restored from active preset immediately
     const initialEffectInstance = createEffectInstance(initialEffect, initialParams);
     engine.setEffect(initialEffectInstance);
 
@@ -162,6 +163,55 @@ export const App: React.FC = () => {
     // Check device connection
     void checkDevice();
     const devicePoll = window.setInterval(() => { void checkDevice(); }, 3000);
+
+    // Hydrate persistent settings and custom presets directly from disk (survives PC restarts & dev/prod boundary)
+    void (async () => {
+      try {
+        const [loadedSettings, loadedPresets] = await Promise.all([
+          loadSettingsAsync(),
+          loadPresetsAsync(),
+        ]);
+        setPresets(loadedPresets);
+
+        const targetEffect = loadedSettings.currentEffectType as EffectType;
+        const targetPresetId =
+          loadedSettings.activePresetByEffect?.[targetEffect] ||
+          loadedSettings.activePresetId ||
+          DEFAULT_ACTIVE_PRESETS[targetEffect];
+
+        const matchedPreset =
+          loadedPresets.find((p) => p.id === targetPresetId && p.effectType === targetEffect) ||
+          loadedPresets.find((p) => p.id === targetPresetId);
+
+        const targetParams = (loadedSettings.effectParams[targetEffect]
+          ? JSON.parse(JSON.stringify(loadedSettings.effectParams[targetEffect]))
+          : (matchedPreset
+              ? JSON.parse(JSON.stringify(matchedPreset.params))
+              : (EFFECT_REGISTRY[targetEffect]?.defaultParams || DEFAULT_AURORA_PARAMS))) as AnyEffectParams;
+
+        setActiveTab(loadedSettings.activeTab);
+        setCurrentEffectType(targetEffect);
+        setCurrentParams(targetParams);
+        setActivePresetId(matchedPreset?.id || targetPresetId);
+        setActivePresetByEffect(loadedSettings.activePresetByEffect || DEFAULT_ACTIVE_PRESETS);
+        setPixelArtParams(loadedSettings.pixelArtParams);
+        setFpsLimit(loadedSettings.fpsLimit);
+        setHardwareEnabled(loadedSettings.hardwareEnabled);
+        setActiveColor(loadedSettings.activeColor);
+
+        // Update animation engine with confirmed disk settings
+        if (animatorRef.current) {
+          const inst = createEffectInstance(targetEffect, targetParams);
+          animatorRef.current.setEffect(inst);
+          animatorRef.current.setHardwareFrameRateLimit(loadedSettings.fpsLimit);
+        }
+        hardwareService.setHardwareEnabled(loadedSettings.hardwareEnabled);
+      } catch (err) {
+        console.warn('Hydration from persistent disk storage failed:', err);
+      } finally {
+        isHydratedRef.current = true;
+      }
+    })();
 
     return () => {
       window.clearInterval(devicePoll);
@@ -378,6 +428,20 @@ export const App: React.FC = () => {
     setHardwareError(undefined);
     setHardwareStatus(nextState ? 'connecting' : 'preview-only');
     hardwareService.setHardwareEnabled(nextState);
+  };
+
+  const handleToggleStartup = async () => {
+    try {
+      if (isStartupEnabled) {
+        await invoke('disable_startup_launch');
+        setIsStartupEnabled(false);
+      } else {
+        await invoke('enable_startup_launch');
+        setIsStartupEnabled(true);
+      }
+    } catch (err) {
+      console.error('Failed to toggle Windows startup launch:', err);
+    }
   };
 
   // Presets
@@ -714,6 +778,8 @@ export const App: React.FC = () => {
                 fpsLimit={fpsLimit}
                 onFpsLimitChange={(fps) => setFpsLimit(fps)}
                 onRefreshDevice={checkDevice}
+                isStartupEnabled={isStartupEnabled}
+                onToggleStartup={handleToggleStartup}
               />
             )}
           </section>

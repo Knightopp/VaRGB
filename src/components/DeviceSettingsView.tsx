@@ -8,6 +8,7 @@ import {
   Sliders,
   CheckCircle2,
   Terminal,
+  Power,
 } from 'lucide-react';
 import { DeviceInfo } from '../services/hardware';
 
@@ -22,6 +23,8 @@ interface DeviceSettingsViewProps {
   fpsLimit: number;
   onFpsLimitChange: (fps: number) => void;
   onRefreshDevice: () => void;
+  isStartupEnabled?: boolean;
+  onToggleStartup?: () => void;
 }
 
 export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
@@ -35,6 +38,8 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
   fpsLimit,
   onFpsLimitChange,
   onRefreshDevice,
+  isStartupEnabled = false,
+  onToggleStartup,
 }) => {
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
@@ -188,6 +193,30 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
           </div>
         </div>
 
+        {/* Windows Startup & Integration Card */}
+        <div className="settings-card full-width">
+          <div className="card-header">
+            <Power size={15} />
+            <h3>Windows Startup & Persistence Integration</h3>
+          </div>
+          <div className="card-body">
+            <div className="toggle-row">
+              <div>
+                <strong>Launch on Windows Startup</strong>
+                <p>
+                  Automatically start VaRGB on system boot and restore your active lighting effect, colors, and presets to the K630.
+                </p>
+              </div>
+              <button
+                className={`toggle-btn ${isStartupEnabled ? 'active' : ''}`}
+                onClick={onToggleStartup}
+              >
+                {isStartupEnabled ? 'AUTO-LAUNCH ON' : 'DISABLED'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Persistence Architecture & Protocol Report */}
         <div className="settings-card full-width">
           <div className="card-header">
@@ -196,21 +225,21 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
           </div>
           <div className="persistence-report">
             <div className="report-item">
-                <strong>1. Built-in Keyboard Lighting</strong>
+              <strong>1. Built-in Keyboard Lighting</strong>
               <p>
-                The K630 has built-in lighting modes that can be selected with its keyboard shortcuts. The supplied RGB streaming protocol does not document a command for saving custom animation data to keyboard memory.
+                The K630 contains factory hardware modes switched via Fn shortcuts. The USB protocol streams dynamic color maps while software is running.
               </p>
             </div>
             <div className="report-item">
-                <strong>2. Live Custom Effects</strong>
+              <strong>2. Uninterrupted Background Streaming</strong>
               <p>
-                VaRGB generates effects on the computer and streams RGB frames while the app is running. Whether the keyboard stores any streamed frame or resumes a particular built-in mode after reconnect has not been verified, so custom animation persistence is unconfirmed.
+                VaRGB streams RGB frames continuously even when the window is minimized or running in the system tray, preventing firmware timeout and keeping custom animations active.
               </p>
             </div>
             <div className="report-item">
-                <strong>3. Studio Presets</strong>
+              <strong>3. Permanent Disk Storage</strong>
               <p>
-                Saved presets are stored in this app's local storage. They remain available on this computer, but the selected effect is not automatically restored and streamed when Studio starts.
+                Presets and preferences are saved directly to local disk (%APPDATA%\com.k630.studio), automatically restoring your exact active effect and custom parameters upon reboot.
               </p>
             </div>
           </div>

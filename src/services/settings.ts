@@ -3,6 +3,7 @@ import { RGBColor } from '../types/keyboard';
 import { NavTab } from '../components/Sidebar';
 import { DEFAULT_AURORA_PARAMS } from '../engine/effects/aurora';
 import { DEFAULT_PIXEL_ART_PARAMS } from '../engine/effects/pixelArt';
+import { invoke } from '@tauri-apps/api/core';
 
 const SETTINGS_KEY = 'vargb_app_settings_v1';
 
@@ -80,6 +81,41 @@ export function loadSettings(): AppSettings {
   return DEFAULT_SETTINGS;
 }
 
+export async function loadSettingsAsync(): Promise<AppSettings> {
+  try {
+    const raw = await invoke<string | null>('load_persistent_settings');
+    if (raw && raw.trim() !== '' && raw.trim() !== '{}') {
+      const parsed = JSON.parse(raw);
+      const resolved: AppSettings = {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        activePresetByEffect: {
+          ...DEFAULT_ACTIVE_PRESETS,
+          ...(parsed.activePresetByEffect || {}),
+        },
+        effectParams: {
+          ...DEFAULT_SETTINGS.effectParams,
+          ...(parsed.effectParams || {}),
+        },
+      };
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(resolved));
+      } catch {}
+      return resolved;
+    }
+  } catch (err) {
+    console.warn('Persistent settings not loaded from disk:', err);
+  }
+
+  // Fallback to local storage
+  const local = loadSettings();
+  // Migrate existing settings to disk
+  try {
+    await invoke('save_persistent_settings', { settingsJson: JSON.stringify(local) });
+  } catch {}
+  return local;
+}
+
 export function saveSettings(settings: Partial<AppSettings>): void {
   if (typeof window === 'undefined') return;
   try {
@@ -92,8 +128,16 @@ export function saveSettings(settings: Partial<AppSettings>): void {
         ...(settings.effectParams || {}),
       },
     };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+    const jsonStr = JSON.stringify(updated);
+    try {
+      localStorage.setItem(SETTINGS_KEY, jsonStr);
+    } catch {}
+
+    void invoke('save_persistent_settings', { settingsJson: jsonStr }).catch((err) => {
+      console.warn('Failed to write settings to disk:', err);
+    });
   } catch (err) {
     console.error('Failed to save settings:', err);
   }
 }
+

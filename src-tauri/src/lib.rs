@@ -6,6 +6,8 @@ use hidapi::HidDevice;
 use k630::{
     DeviceManager, DeviceStatus, K630_KEY_IDS, K630_LED_INDICES, RGB_PAYLOAD_LEN, build_rgb_payload,
 };
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
@@ -119,6 +121,63 @@ fn is_startup_launch_enabled() -> Result<bool, String> {
     }
 }
 
+fn get_app_storage_path(_app: &tauri::AppHandle, filename: &str) -> Result<PathBuf, String> {
+    let base_dir = std::env::var_os("APPDATA")
+        .or_else(|| std::env::var_os("LOCALAPPDATA"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let app_dir = base_dir.join("com.k630.studio");
+    if !app_dir.exists() {
+        fs::create_dir_all(&app_dir)
+            .map_err(|e| format!("Failed to create storage dir {}: {e}", app_dir.display()))?;
+    }
+    Ok(app_dir.join(filename))
+}
+
+#[tauri::command]
+fn load_persistent_settings(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = get_app_storage_path(&app, "settings.json")?;
+    if !path.exists() {
+        eprintln!("[VaRGB] settings.json not found on disk");
+        return Ok(None);
+    }
+    let data = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read settings from {}: {e}", path.display()))?;
+    eprintln!("[VaRGB] Loaded persistent settings (len: {})", data.len());
+    Ok(Some(data))
+}
+
+#[tauri::command]
+fn save_persistent_settings(app: tauri::AppHandle, settings_json: String) -> Result<(), String> {
+    let path = get_app_storage_path(&app, "settings.json")?;
+    fs::write(&path, &settings_json)
+        .map_err(|e| format!("Failed to write settings to {}: {e}", path.display()))?;
+    eprintln!("[VaRGB] Successfully saved settings.json (len: {})", settings_json.len());
+    Ok(())
+}
+
+#[tauri::command]
+fn load_persistent_presets(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = get_app_storage_path(&app, "presets.json")?;
+    if !path.exists() {
+        eprintln!("[VaRGB] presets.json not found on disk");
+        return Ok(None);
+    }
+    let data = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read presets from {}: {e}", path.display()))?;
+    eprintln!("[VaRGB] Loaded persistent presets (len: {})", data.len());
+    Ok(Some(data))
+}
+
+#[tauri::command]
+fn save_persistent_presets(app: tauri::AppHandle, presets_json: String) -> Result<(), String> {
+    let path = get_app_storage_path(&app, "presets.json")?;
+    fs::write(&path, &presets_json)
+        .map_err(|e| format!("Failed to write presets to {}: {e}", path.display()))?;
+    eprintln!("[VaRGB] Successfully saved presets.json (len: {})", presets_json.len());
+    Ok(())
+}
+
 fn with_active_device<T>(
     state: &AppState,
     operation: impl FnOnce(&DeviceManager, &HidDevice) -> Result<T, String>,
@@ -208,6 +267,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            let handle = app.handle().clone();
+            if let Ok(settings_path) = get_app_storage_path(&handle, "settings.json") {
+                if !settings_path.exists() {
+                    let _ = fs::write(&settings_path, "{}");
+                }
+            }
+            if let Ok(presets_path) = get_app_storage_path(&handle, "presets.json") {
+                if !presets_path.exists() {
+                    let _ = fs::write(&presets_path, "[]");
+                }
+            }
+
             #[cfg(windows)]
             {
                 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
@@ -299,7 +370,11 @@ pub fn run() {
             stop_audio_capture,
             enable_startup_launch,
             disable_startup_launch,
-            is_startup_launch_enabled
+            is_startup_launch_enabled,
+            load_persistent_settings,
+            save_persistent_settings,
+            load_persistent_presets,
+            save_persistent_presets
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

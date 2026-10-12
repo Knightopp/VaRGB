@@ -1,6 +1,7 @@
 import { KeyFrameColor } from '../types/keyboard';
 import { K630_LAYOUT } from '../engine/layout';
 import { hexToRgb } from '../engine/color';
+import { invoke } from '@tauri-apps/api/core';
 
 export interface DeviceInfo {
   connected: boolean;
@@ -63,8 +64,7 @@ function computePayloadChecksum(payload: Uint8Array): number {
 }
 
 class HardwareBridge {
-  private isTauri: boolean = false;
-  private invoke: any = null;
+  private invoke: any = invoke;
   private isTransmitting: boolean = false;
   private pendingFrame: KeyFrameColor | null = null;
   private hardwareEnabled: boolean = false;
@@ -81,32 +81,23 @@ class HardwareBridge {
   // Keep the K630 in software control so firmware never reverts to onboard factory rainbow
   private readonly unchangedFrameKeepaliveMs = 85;
   private statusListener: ((status: 'connecting' | 'active' | 'error' | 'preview-only', message?: string) => void) | null = null;
+  private retryTimer: number | null = null;
 
-  constructor() {
-    this.detectTauri();
-  }
-
-  private async detectTauri() {
-    try {
-      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        this.invoke = invoke;
-        this.isTauri = true;
-      }
-    } catch {
-      this.isTauri = false;
-    }
-  }
+  constructor() {}
 
   public setHardwareEnabled(enabled: boolean): void {
     this.hardwareEnabled = enabled;
+    if (this.retryTimer !== null) {
+      window.clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
     if (!enabled) {
       this.pendingFrame = null;
       this.lastPayloadChecksum = 0;
       this.lastPayloadSentAt = 0;
       this.retryAt = 0;
       this.notifyStatus('preview-only');
-      if (this.invoke) void this.invoke('disconnect_k630').catch(() => undefined);
+      void invoke('disconnect_k630').catch(() => undefined);
     } else {
       this.notifyStatus('connecting');
     }
@@ -134,16 +125,10 @@ class HardwareBridge {
   }
 
   public async getStatus(): Promise<DeviceInfo> {
-    if (!this.invoke) {
-      await this.detectTauri();
-    }
-
-    if (this.isTauri && this.invoke) {
-      try {
-        return await this.invoke('get_device_status');
-      } catch (e) {
-        console.warn('Failed to query device status:', e);
-      }
+    try {
+      return await invoke<DeviceInfo>('get_device_status');
+    } catch (e) {
+      console.warn('Failed to query device status:', e);
     }
 
     // Fallback simulation state
@@ -161,28 +146,20 @@ class HardwareBridge {
 
   public async testDeviceFrame(hexColor: string): Promise<string> {
     const rgb = hexToRgb(hexColor);
-    if (!this.invoke) {
-      await this.detectTauri();
+    try {
+      this.statusListener?.('connecting');
+      const result = await invoke<string>('test_device_frame', {
+        r: rgb.r,
+        g: rgb.g,
+        b: rgb.b,
+      });
+      this.statusListener?.('active');
+      return result;
+    } catch (err: any) {
+      const message = typeof err === 'string' ? err : err.message || 'HID transmission error';
+      this.statusListener?.('error', message);
+      throw new Error(message);
     }
-
-    if (this.isTauri && this.invoke) {
-      try {
-        this.statusListener?.('connecting');
-        const result = await this.invoke('test_device_frame', {
-          r: rgb.r,
-          g: rgb.g,
-          b: rgb.b,
-        });
-        this.statusListener?.('active');
-        return result;
-      } catch (err: any) {
-        const message = typeof err === 'string' ? err : err.message || 'HID transmission error';
-        this.statusListener?.('error', message);
-        throw new Error(message);
-      }
-    }
-
-    return `Simulator probe rendered: RGB(${rgb.r}, ${rgb.g}, ${rgb.b}) [Desktop Preview Active]`;
   }
 
   private currentStatus: 'connecting' | 'active' | 'error' | 'preview-only' = 'preview-only';
@@ -197,13 +174,18 @@ class HardwareBridge {
   }
 
   public pushFrame(frame: KeyFrameColor): void {
-    if (!this.hardwareEnabled || !this.isTauri || !this.invoke) return;
+    if (!this.hardwareEnabled) return;
 
     if (this.pendingFrame !== null) {
       this.droppedFrames++;
     }
     // Stale frame dropping: retain newest desired frame
     this.pendingFrame = frame;
+
+    if (this.retryTimer !== null && Date.now() >= this.retryAt) {
+      window.clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
 
     if (!this.isTransmitting && Date.now() >= this.retryAt) {
       void this.transmitLoop();
@@ -254,9 +236,17 @@ class HardwareBridge {
         this.transmissionErrors++;
         const message = typeof err === 'string' ? err : (err as Error)?.message || 'K630 HID transmission error';
         console.warn('K630 frame transmission failed:', message);
-        // Fast retry: retry after 35ms, NEVER back off for 1200ms which triggers factory rainbow!
         this.retryAt = Date.now() + 35;
         this.notifyStatus('error', message);
+
+        if (this.retryTimer === null && this.hardwareEnabled) {
+          this.retryTimer = window.setTimeout(() => {
+            this.retryTimer = null;
+            if (this.hardwareEnabled && this.pendingFrame) {
+              void this.transmitLoop();
+            }
+          }, 40);
+        }
         break;
       }
     }
