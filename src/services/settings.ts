@@ -7,6 +7,9 @@ import { invoke } from '@tauri-apps/api/core';
 
 const SETTINGS_KEY = 'vargb_app_settings_v1';
 
+export type KeyboardVisualTheme = 'mechanical' | 'classic' | 'pudding' | 'stealth';
+export type GapLightingMode = 'vivid' | 'subtle' | 'off';
+
 export interface AppSettings {
   activeTab: NavTab;
   currentEffectType: EffectType;
@@ -17,6 +20,8 @@ export interface AppSettings {
   fpsLimit: number;
   hardwareEnabled: boolean;
   activeColor: RGBColor;
+  keyboardTheme?: KeyboardVisualTheme;
+  gapLighting?: GapLightingMode;
 }
 
 export const DEFAULT_ACTIVE_PRESETS: Record<EffectType, string> = {
@@ -96,6 +101,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fpsLimit: 30,
   hardwareEnabled: true,
   activeColor: { r: 255, g: 0, b: 0 },
+  keyboardTheme: 'mechanical',
+  gapLighting: 'vivid',
 };
 
 export function loadSettings(): AppSettings {

@@ -28,18 +28,28 @@ export class AnimationEngine {
     this.setupVisibilityListener();
   }
 
+  private handleVisibilityChange = (): void => {
+    if (!this.isRunning || this.isPaused) return;
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.switchToBackground();
+    } else {
+      this.switchToForeground();
+    }
+  };
+
+  private handleWindowFocus = (): void => {
+    if (!this.isRunning || this.isPaused) return;
+    this.lastTimestamp = performance.now();
+    if (typeof document !== 'undefined' && !document.hidden) {
+      this.switchToForeground();
+    }
+  };
+
   private setupVisibilityListener(): void {
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (this.isRunning && !this.isPaused) {
-          this.lastTimestamp = performance.now();
-          if (document.hidden) {
-            this.startBackgroundLoop();
-          } else if (this.animFrameId === null) {
-            this.animFrameId = requestAnimationFrame(this.tick);
-          }
-        }
-      });
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      window.addEventListener('focus', this.handleWindowFocus);
     }
   }
 
@@ -54,7 +64,30 @@ export class AnimationEngine {
   }
 
   public setEffect(effect: ILightingEffect): void {
+    // Clean up previous effect state to prevent mode-switching bleed
+    if (this.effect && this.effect !== effect) {
+      try {
+        this.effect.reset();
+      } catch (err) {
+        console.warn('Error resetting previous effect:', err);
+      }
+    }
     this.effect = effect;
+    // Reset accumulated time so new effect starts at t=0
+    this.accumulatedTime = 0;
+    this.lastTimestamp = performance.now();
+
+    // Clean baseline frame on effect switch so prior effect keys don't linger
+    if (this.keys && this.keys.length > 0) {
+      const offFrame: KeyFrameColor = {};
+      for (const k of this.keys) {
+        offFrame[k.id] = { r: 0, g: 0, b: 0 };
+      }
+      this.notifySubscribers(offFrame);
+      if (this.hardwareListener) {
+        this.hardwareListener(offFrame);
+      }
+    }
   }
 
   public setAudioAnalysis(analysis: AudioAnalysis | undefined): void {
@@ -85,27 +118,85 @@ export class AnimationEngine {
     this.isPaused = false;
     this.lastTimestamp = performance.now();
     this.accumulatedTime = 0;
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.switchToBackground();
+    } else {
+      this.switchToForeground();
+    }
+  }
+
+  private switchToBackground(): void {
+    // 1. Cancel active RAF so it doesn't queue callbacks or fight with background loop
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    // 2. Start background interval if not already running
     this.startBackgroundLoop();
-    this.tick(this.lastTimestamp);
+  }
+
+  private switchToForeground(): void {
+    // 1. Stop background interval immediately
+    this.stopBackgroundLoop();
+    // 2. Refresh timestamp so dt is not a giant jump
+    this.lastTimestamp = performance.now();
+    // 3. Ensure any existing RAF is cancelled so we never duplicate
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    // 4. Start single foreground RAF loop
+    this.animFrameId = requestAnimationFrame(this.tick);
   }
 
   private startBackgroundLoop(): void {
     if (this.backgroundTimerId !== null || typeof window === 'undefined') return;
-    this.backgroundTimerId = window.setInterval(() => {
-      if (!this.isRunning || this.isPaused) return;
-      const now = performance.now();
-      // Keep streaming to hardware at target interval if RAF throttles/stops in background
-      if (now - this.lastTimestamp >= this.hardwareIntervalMs * 0.95) {
-        this.tick(now);
-      }
-    }, Math.max(16, Math.floor(this.hardwareIntervalMs)));
+    this.backgroundTimerId = window.setInterval(
+      this.backgroundTick,
+      Math.max(16, Math.floor(this.hardwareIntervalMs))
+    );
   }
 
-  public pause(): void {
-    this.isPaused = true;
+  private stopBackgroundLoop(): void {
     if (this.backgroundTimerId !== null) {
       clearInterval(this.backgroundTimerId);
       this.backgroundTimerId = null;
+    }
+  }
+
+  private backgroundTick = (): void => {
+    if (!this.isRunning || this.isPaused) return;
+    const now = performance.now();
+    const rawDt = (now - this.lastTimestamp) / 1000;
+    const dt = Number.isFinite(rawDt) ? Math.min(0.1, Math.max(0.001, rawDt)) : 0.033;
+    this.accumulatedTime += dt;
+    this.lastTimestamp = now;
+
+    if (this.effect) {
+      const ctx: AnimationContext = {
+        keys: this.keys,
+        totalTime: this.accumulatedTime,
+        dt,
+        audio: this.audioAnalysis,
+      };
+
+      const frame = this.effect.update(ctx);
+
+      // In background, stream directly to USB hardware controller without touching DOM
+      if (this.hardwareListener && now - this.lastHardwarePushTime >= this.hardwareIntervalMs) {
+        this.lastHardwarePushTime = now;
+        this.hardwareListener(frame);
+      }
+    }
+  };
+
+  public pause(): void {
+    this.isPaused = true;
+    this.stopBackgroundLoop();
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
     }
   }
 
@@ -116,16 +207,17 @@ export class AnimationEngine {
     }
     this.isPaused = false;
     this.lastTimestamp = performance.now();
-    this.startBackgroundLoop();
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.switchToBackground();
+    } else {
+      this.switchToForeground();
+    }
   }
 
   public stop(): void {
     this.isRunning = false;
     this.isPaused = false;
-    if (this.backgroundTimerId !== null) {
-      clearInterval(this.backgroundTimerId);
-      this.backgroundTimerId = null;
-    }
+    this.stopBackgroundLoop();
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -146,6 +238,10 @@ export class AnimationEngine {
 
   public destroy(): void {
     this.stop();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+      window.removeEventListener('focus', this.handleWindowFocus);
+    }
     if (this.inputUnsubscribe) {
       this.inputUnsubscribe();
       this.inputUnsubscribe = null;
@@ -158,10 +254,21 @@ export class AnimationEngine {
   }
 
   private tick = (timestamp: number): void => {
+    // Clear animFrameId since this frame callback is executing now
+    this.animFrameId = null;
+
     if (!this.isRunning) return;
 
+    // If window became hidden, switch cleanly to background loop and stop RAF
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.switchToBackground();
+      return;
+    }
+
     if (!this.isPaused && this.effect) {
-      const dt = Math.min(0.1, (timestamp - this.lastTimestamp) / 1000);
+      // Clamped delta time: prevents physics/animation explosions on frame drops or focus restores
+      const rawDt = (timestamp - this.lastTimestamp) / 1000;
+      const dt = Number.isFinite(rawDt) ? Math.min(0.05, Math.max(0.001, rawDt)) : 0.016;
       this.accumulatedTime += dt;
       this.lastTimestamp = timestamp;
 
@@ -184,7 +291,10 @@ export class AnimationEngine {
       this.lastTimestamp = timestamp;
     }
 
-    this.animFrameId = requestAnimationFrame(this.tick);
+    // Schedule next frame ONLY if running, not paused, and window is visible
+    if (this.isRunning && !this.isPaused) {
+      this.animFrameId = requestAnimationFrame(this.tick);
+    }
   };
 
   private notifySubscribers(frame: KeyFrameColor): void {

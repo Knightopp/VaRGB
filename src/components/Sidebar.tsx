@@ -1,17 +1,12 @@
 import React from 'react';
 import {
-  LayoutDashboard,
-  Sparkles,
-  Palette,
-  Bookmark,
-  Sliders,
-  Cpu,
-  CheckCircle2,
-  AlertCircle,
-  Film,
+  Lightbulb,
+  Keyboard,
+  Settings,
+  Gamepad2,
 } from 'lucide-react';
 
-export type NavTab = 'overview' | 'effects' | 'pixel_art' | 'presets' | 'settings' | 'studio';
+export type NavTab = 'overview' | 'effects' | 'pixel_art' | 'presets' | 'settings' | 'arcade';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -25,69 +20,80 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   isDeviceConnected,
-  deviceName = 'Redragon K630 RGB',
-  isOpen = true,
+  deviceName = 'Redragon K630',
 }) => {
-  const navItems = [
-    { id: 'overview' as NavTab, label: 'Overview', icon: LayoutDashboard },
-    { id: 'effects' as NavTab, label: 'Lighting Effects', icon: Sparkles },
-    { id: 'studio' as NavTab, label: 'Studio (AE)', icon: Film },
-    { id: 'pixel_art' as NavTab, label: 'Custom Pixel Art', icon: Palette },
-    { id: 'presets' as NavTab, label: 'Presets', icon: Bookmark },
-    { id: 'settings' as NavTab, label: 'Device Settings', icon: Sliders },
-  ];
+  const isLightingActive = activeTab === 'overview' || activeTab === 'effects';
+  const isArcadeActive = activeTab === 'arcade';
+  const isKeybindsActive = activeTab === 'pixel_art' || activeTab === 'presets';
+  const isSettingsActive = activeTab === 'settings';
 
   return (
-    <aside className={`app-sidebar ${isOpen ? '' : 'collapsed'}`}>
-      <div className="sidebar-brand">
-        <div className="brand-logo-container">
-          <Cpu size={18} className="brand-icon" />
-        </div>
-        <div className="brand-info">
-          <span className="brand-title">VaRGB - vazorism productions</span>
-          <span className="brand-subtitle">RGB Controller v1.0</span>
-        </div>
+    <aside className="app-modern-sidebar">
+      {/* Top Branding */}
+      <div className="modern-sidebar-brand">
+        <h1 className="modern-brand-title">VaRGB</h1>
+        <span className="modern-brand-subtitle">{deviceName}</span>
       </div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              className={`nav-button ${isActive ? 'active' : ''}`}
-              onClick={() => onTabChange(item.id)}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      {/* Navigation List */}
+      <nav className="modern-sidebar-nav">
+        {/* Lighting */}
+        <button
+          className={`modern-nav-item ${isLightingActive ? 'active' : ''}`}
+          onClick={() => onTabChange('overview')}
+        >
+          {isLightingActive && <span className="nav-active-pip" />}
+          <Lightbulb size={17} className="nav-item-icon" />
+          <span className="nav-item-text">Lighting</span>
+        </button>
+
+        {/* Arcade */}
+        <button
+          className={`modern-nav-item ${isArcadeActive ? 'active' : ''}`}
+          onClick={() => onTabChange('arcade')}
+        >
+          {isArcadeActive && <span className="nav-active-pip" />}
+          <Gamepad2 size={17} className="nav-item-icon" />
+          <span className="nav-item-text">Arcade</span>
+        </button>
+
+        {/* Keybinds / Presets */}
+        <button
+          className={`modern-nav-item ${isKeybindsActive ? 'active' : ''}`}
+          onClick={() => onTabChange('presets')}
+        >
+          {isKeybindsActive && <span className="nav-active-pip" />}
+          <Keyboard size={17} className="nav-item-icon" />
+          <span className="nav-item-text">Keybinds</span>
+        </button>
+
+        {/* Settings */}
+        <button
+          className={`modern-nav-item ${isSettingsActive ? 'active' : ''}`}
+          onClick={() => onTabChange('settings')}
+        >
+          {isSettingsActive && <span className="nav-active-pip" />}
+          <Settings size={17} className="nav-item-icon" />
+          <span className="nav-item-text">Settings</span>
+        </button>
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="device-status-card">
-          <div className="device-status-header">
-            <span
-              className={`status-pill ${
-                isDeviceConnected ? 'connected' : 'disconnected'
-              }`}
-            >
-              {isDeviceConnected ? (
-                <CheckCircle2 size={11} />
-              ) : (
-                <AlertCircle size={11} />
-              )}
-              {isDeviceConnected ? 'HARDWARE DETECTED' : 'SIMULATION MODE'}
-            </span>
+      {/* Bottom Connected Device Card */}
+      <div className="modern-sidebar-footer">
+        <div className="modern-device-card">
+          <div className="device-icon-box">
+            <Keyboard size={16} />
           </div>
-          <div className="device-name-text">{deviceName}</div>
-          <div className="device-meta-text">
-            VID: 0x320F • PID: 0x5000 • 60% ANSI
+          <div className="device-card-info">
+            <span className="device-card-name">{deviceName}</span>
+            <div className="device-card-status">
+              <span className={`status-dot ${isDeviceConnected ? 'connected' : 'simulation'}`} />
+              <span className="status-label">{isDeviceConnected ? 'Connected' : 'Simulation'}</span>
+            </div>
           </div>
         </div>
       </div>
     </aside>
   );
 };
+

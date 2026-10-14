@@ -149,18 +149,46 @@ export const LiquidChrome: React.FC<LiquidChromeProps> = ({
       container.addEventListener('mousemove', handleMouseMove);
     }
 
-    let animationId: number;
+    let animationId: number = 0;
     function update(t: number) {
       animationId = requestAnimationFrame(update);
       program.uniforms.uTime.value = t * 0.001 * propsRef.current.speed;
       renderer.render({ scene: mesh });
     }
-    animationId = requestAnimationFrame(update);
+
+    const startAnimation = () => {
+      if (!animationId && (typeof document === 'undefined' || !document.hidden)) {
+        animationId = requestAnimationFrame(update);
+      }
+    };
+
+    const stopAnimation = () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = 0;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    startAnimation();
 
     container.appendChild(gl.canvas);
 
     return () => {
-      cancelAnimationFrame(animationId);
+      stopAnimation();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
       window.removeEventListener('resize', resize);
       if (interactive) {
         container.removeEventListener('mousemove', handleMouseMove);

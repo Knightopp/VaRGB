@@ -9,10 +9,10 @@ import { MusicPulseSettings } from './MusicPulseSettings';
 interface EffectControlsProps {
   currentType: EffectType;
   params: AnyEffectParams;
-  onTypeChange: (type: EffectType) => void;
+  onTypeChange?: (type: EffectType) => void;
   onParamsChange: (newParams: AnyEffectParams) => void;
-  onResetDefaults: () => void;
-  onSavePreset: (name: string) => void;
+  onResetDefaults?: () => void;
+  onSavePreset?: (name: string) => void;
   presets?: SavedPreset[];
   activePresetId?: string;
   activePresetByEffect?: Partial<Record<EffectType, string>>;
@@ -21,6 +21,7 @@ interface EffectControlsProps {
   onDeletePreset?: (id: string) => void;
   hardwareEnabled?: boolean;
   hardwareStatus?: 'preview-only' | 'connecting' | 'active' | 'error';
+  embeddedMode?: boolean;
 }
 
 export const EffectControls: React.FC<EffectControlsProps> = ({
@@ -38,6 +39,7 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
   onDeletePreset,
   hardwareEnabled = false,
   hardwareStatus = 'preview-only',
+  embeddedMode = false,
 }) => {
   const [presetNameInput, setPresetNameInput] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -51,31 +53,37 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
 
   const handleSave = () => {
     if (!presetNameInput.trim()) return;
-    onSavePreset(presetNameInput.trim());
+    onSavePreset && onSavePreset(presetNameInput.trim());
     setPresetNameInput('');
     setShowSaveModal(false);
   };
 
   return (
-    <div className="effect-controls-panel">
-      <div className="panel-header">
-        <div className="panel-title-group">
-          <SlidersHorizontal size={15} />
-          <h2>Lighting Parameters</h2>
+    <div className={`effect-controls-panel ${embeddedMode ? 'embedded' : ''}`}>
+      {!embeddedMode && (
+        <div className="panel-header">
+          <div className="panel-title-group">
+            <SlidersHorizontal size={15} />
+            <h2>Lighting Parameters</h2>
+          </div>
+          <div className="panel-actions">
+            {onResetDefaults && (
+              <button onClick={onResetDefaults} className="icon-btn" title="Reset to Defaults">
+                <RotateCcw size={13} />
+                <span>Reset</span>
+              </button>
+            )}
+            {onSavePreset && (
+              <button onClick={() => setShowSaveModal(true)} className="icon-btn primary" title="Save Preset">
+                <Save size={13} />
+                <span>Save Preset</span>
+              </button>
+            )}
+          </div>
         </div>
-        <div className="panel-actions">
-          <button onClick={onResetDefaults} className="icon-btn" title="Reset to Defaults">
-            <RotateCcw size={13} />
-            <span>Reset</span>
-          </button>
-          <button onClick={() => setShowSaveModal(true)} className="icon-btn primary" title="Save Preset">
-            <Save size={13} />
-            <span>Save Preset</span>
-          </button>
-        </div>
-      </div>
+      )}
 
-      {showSaveModal && (
+      {!embeddedMode && showSaveModal && (
         <div className="save-preset-inline">
           <input
             type="text"
@@ -91,26 +99,28 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
       )}
 
       {/* Effect Mode Selector */}
-      <div className="control-group">
-        <label className="control-label">Effect Mode</label>
-        <div className="effect-selector-grid">
-          {(Object.keys(EFFECT_REGISTRY) as EffectType[])
-            .filter((type) => type !== 'pixel_art')
-            .map((type) => {
-              const meta = EFFECT_REGISTRY[type];
-              const isSelected = currentType === type;
-              return (
-                <button
-                  key={type}
-                  className={`effect-chip ${isSelected ? 'active' : ''}`}
-                  onClick={() => onTypeChange(type)}
-                >
-                  <span>{meta.name}</span>
-                </button>
-              );
-            })}
+      {!embeddedMode && onTypeChange && (
+        <div className="control-group">
+          <label className="control-label">Effect Mode</label>
+          <div className="effect-selector-grid">
+            {(Object.keys(EFFECT_REGISTRY) as EffectType[])
+              .filter((type) => type !== 'pixel_art')
+              .map((type) => {
+                const meta = EFFECT_REGISTRY[type];
+                const isSelected = currentType === type;
+                return (
+                  <button
+                    key={type}
+                    className={`effect-chip ${isSelected ? 'active' : ''}`}
+                    onClick={() => onTypeChange(type)}
+                  >
+                    <span>{meta.name}</span>
+                  </button>
+                );
+              })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Effect-Specific Presets Section */}
       <div className="effect-presets-section">

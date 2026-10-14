@@ -1,6 +1,6 @@
 import { AnimationContext, ILightingEffect } from '../../types/effects';
 import { KeyFrameColor, RGBColor } from '../../types/keyboard';
-import { K630_LAYOUT, KEY_BY_CODE, KEY_BY_ID } from '../layout';
+import { K630_LAYOUT, KEY_BY_CODE, KEY_BY_ID, getKeyCenter } from '../layout';
 
 export interface LaserCrosshairParams {
   brightness: number;
@@ -12,6 +12,8 @@ export interface LaserCrosshairParams {
 interface ActiveBeam {
   targetR: number;  // gridY of target
   targetC: number;  // gridX of target
+  originX: number;  // Physical center X
+  originY: number;  // Physical center Y
   age: number;
   color: RGBColor;
 }
@@ -29,9 +31,13 @@ export class LaserCrosshairEffect implements ILightingEffect {
     const key = KEY_BY_CODE[code] || KEY_BY_ID[code];
     if (!key) return;
 
+    const center = getKeyCenter(key);
+
     this.beams.push({
       targetR: key.gridY,
       targetC: key.gridX,
+      originX: center.x,
+      originY: center.y,
       age: 0,
       color: { ...this.params.primaryColor },
     });
@@ -50,6 +56,11 @@ export class LaserCrosshairEffect implements ILightingEffect {
     const keys = ctx.keys ?? K630_LAYOUT;
     const maxAge = Math.max(0.1, this.params.beamDuration);
 
+    // Synchronized outward travel: reaches edges in ~50% of the beam's total lifetime
+    const sweepDuration = Math.max(0.14, maxAge * 0.52);
+    const hSpeed = 15.0 / sweepDuration; // Columns per second to reach outer edge
+    const vSpeed = 5.0 / sweepDuration;  // Rows per second to reach outer edge
+
     // Advance ages, prune expired
     this.beams = this.beams.filter(b => {
       b.age += dt;
@@ -60,6 +71,7 @@ export class LaserCrosshairEffect implements ILightingEffect {
     const base = this.params.baseColor;
 
     for (const key of keys) {
+      const center = getKeyCenter(key);
       const kr = key.gridY;
       const kc = key.gridX;
 
@@ -68,8 +80,7 @@ export class LaserCrosshairEffect implements ILightingEffect {
       let bAccum = base.b;
 
       for (const beam of this.beams) {
-        // Check if key is on the same row or same column
-        // Spacebar is 6.25U wide and spans columns 3 to 9 on the 60% matrix
+        // Orthogonal alignment check
         const inRow = kr === beam.targetR;
         const inCol = key.id === 'space'
           ? (beam.targetC >= 3 && beam.targetC <= 9)
@@ -77,18 +88,54 @@ export class LaserCrosshairEffect implements ILightingEffect {
 
         if (!inRow && !inCol) continue;
 
-        const timeFade = Math.max(0, 1.0 - (beam.age / maxAge));
+        const distX = Math.abs(center.x - beam.originX);
         const colDiff = key.id === 'space'
           ? Math.max(0, Math.abs(6 - beam.targetC) - 1.5)
           : Math.abs(kc - beam.targetC);
-        const dist = Math.abs(kr - beam.targetR) + colDiff;
-        const distFade = Math.max(0, 1.0 - dist / 14.0);
-        const intensity = timeFade * distFade * this.params.brightness;
+        const distY = Math.abs(kr - beam.targetR) + colDiff;
 
-        // Additive blending
-        rAccum = Math.min(255, rAccum + beam.color.r * intensity);
-        gAccum = Math.min(255, gAccum + beam.color.g * intensity);
-        bAccum = Math.min(255, bAccum + beam.color.b * intensity);
+        const dist = inRow ? distX : distY;
+        const speed = inRow ? hSpeed : vSpeed;
+        const currentReach = beam.age * speed;
+
+        const overallLife = Math.max(0, 1.0 - (beam.age / maxAge));
+        const distFade = Math.max(0, 1.0 - (dist / 15.0));
+
+        // Subtle reticle guide line along orthogonal axes
+        const reticleTrace = 0.05 * (overallLife ** 1.2);
+
+        // Outward expanding laser projectile bolt
+        let boltIntensity = 0;
+        let isBoltHead = false;
+
+        if (dist <= currentReach + 0.6) {
+          const lagBehindHead = Math.max(0, currentReach - dist);
+          const headPulse = Math.exp(-lagBehindHead * 1.8);
+          if (headPulse > 0.45) {
+            isBoltHead = true;
+          }
+
+          const trailIntensity = distFade * (overallLife ** 1.3) * 0.95;
+          boltIntensity = headPulse * 1.35 + trailIntensity;
+        }
+
+        // Epicenter impact flash at the clicked/pressed key
+        const isOrigin = Math.abs(center.x - beam.originX) < 0.7 && kr === beam.targetR;
+        const epicenterFlash = isOrigin ? (overallLife ** 1.1) * 1.3 : 0;
+
+        const combinedIntensity = Math.min(1.0, reticleTrace + boltIntensity + epicenterFlash) * this.params.brightness;
+
+        if (combinedIntensity > 0.005) {
+          // White-hot core at the leading laser head and epicenter burst
+          const isHot = isBoltHead || (isOrigin && beam.age < 0.08);
+          const beamR = isHot ? Math.min(255, beam.color.r + 100) : beam.color.r;
+          const beamG = isHot ? Math.min(255, beam.color.g + 100) : beam.color.g;
+          const beamB = isHot ? Math.min(255, beam.color.b + 100) : beam.color.b;
+
+          rAccum = Math.min(255, rAccum + beamR * combinedIntensity);
+          gAccum = Math.min(255, gAccum + beamG * combinedIntensity);
+          bAccum = Math.min(255, bAccum + beamB * combinedIntensity);
+        }
       }
 
       frame[key.id] = {

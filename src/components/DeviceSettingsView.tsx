@@ -9,8 +9,11 @@ import {
   CheckCircle2,
   Terminal,
   Power,
+  RotateCcw,
+  Palette,
 } from 'lucide-react';
 import { DeviceInfo } from '../services/hardware';
+import { KeyboardVisualTheme, GapLightingMode, saveSettings } from '../services/settings';
 
 interface DeviceSettingsViewProps {
   isDeviceConnected: boolean;
@@ -44,6 +47,27 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testColor, setTestColor] = useState('#00e5ff');
+
+  const [kbTheme, setKbTheme] = useState<KeyboardVisualTheme>(() => {
+    return (typeof window !== 'undefined' ? (localStorage.getItem('vargb_kb_theme') as KeyboardVisualTheme) || 'mechanical' : 'mechanical');
+  });
+  const [kbGapLighting, setKbGapLighting] = useState<GapLightingMode>(() => {
+    return (typeof window !== 'undefined' ? (localStorage.getItem('vargb_kb_gap_lighting') as GapLightingMode) || 'vivid' : 'vivid');
+  });
+
+  const handleThemeChange = (newTheme: KeyboardVisualTheme) => {
+    setKbTheme(newTheme);
+    localStorage.setItem('vargb_kb_theme', newTheme);
+    saveSettings({ keyboardTheme: newTheme });
+    window.dispatchEvent(new Event('vargb_kb_theme_change'));
+  };
+
+  const handleGapLightingChange = (newGap: GapLightingMode) => {
+    setKbGapLighting(newGap);
+    localStorage.setItem('vargb_kb_gap_lighting', newGap);
+    saveSettings({ gapLighting: newGap });
+    window.dispatchEvent(new Event('vargb_kb_theme_change'));
+  };
 
   const runTest = async () => {
     setIsTesting(true);
@@ -189,6 +213,103 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
                   <span>{testStatus}</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Virtual Keyboard Appearance & Customization Card */}
+        <div className="settings-card full-width">
+          <div className="card-header">
+            <Palette size={15} />
+            <h3>Virtual Keyboard Appearance & Customization</h3>
+          </div>
+          <div className="card-body">
+            <div className="spec-row" style={{ alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <strong>Keycap Visual Style</strong>
+                <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Choose between the realistic 3D mechanical profile or change back to the classic flat look.
+                </p>
+              </div>
+              <div className="chip-pill-container">
+                <button
+                  type="button"
+                  className={`chip-pill ${kbTheme === 'mechanical' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('mechanical')}
+                >
+                  3D Mechanical
+                </button>
+                <button
+                  type="button"
+                  className={`chip-pill ${kbTheme === 'classic' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('classic')}
+                >
+                  Classic Flat
+                </button>
+                <button
+                  type="button"
+                  className={`chip-pill ${kbTheme === 'pudding' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('pudding')}
+                >
+                  Pudding
+                </button>
+                <button
+                  type="button"
+                  className={`chip-pill ${kbTheme === 'stealth' ? 'active' : ''}`}
+                  onClick={() => handleThemeChange('stealth')}
+                >
+                  Stealth
+                </button>
+              </div>
+            </div>
+
+            <div className="spec-row" style={{ alignItems: 'center' }}>
+              <div>
+                <strong>Inter-Key Gap Lighting</strong>
+                <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Adjust the intensity of RGB underglow visible in the crevices between keycaps.
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="chip-pill-container">
+                  <button
+                    type="button"
+                    className={`chip-pill ${kbGapLighting === 'vivid' ? 'active' : ''}`}
+                    onClick={() => handleGapLightingChange('vivid')}
+                  >
+                    Vivid
+                  </button>
+                  <button
+                    type="button"
+                    className={`chip-pill ${kbGapLighting === 'subtle' ? 'active' : ''}`}
+                    onClick={() => handleGapLightingChange('subtle')}
+                  >
+                    Subtle
+                  </button>
+                  <button
+                    type="button"
+                    className={`chip-pill ${kbGapLighting === 'off' ? 'active' : ''}`}
+                    onClick={() => handleGapLightingChange('off')}
+                  >
+                    Off
+                  </button>
+                </div>
+
+                {(kbTheme !== 'mechanical' || kbGapLighting !== 'vivid') && (
+                  <button
+                    type="button"
+                    className="chip-revert-btn"
+                    onClick={() => {
+                      handleThemeChange('mechanical');
+                      handleGapLightingChange('vivid');
+                    }}
+                    title="Reset to factory appearance"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

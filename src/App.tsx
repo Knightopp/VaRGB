@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { Sidebar, NavTab } from './components/Sidebar';
-import { TopBar } from './components/TopBar';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
-import { EffectControls } from './components/EffectControls';
 import { PixelArtEditor } from './components/PixelArtEditor';
 import { PresetsView } from './components/PresetsView';
 import { DeviceSettingsView } from './components/DeviceSettingsView';
@@ -20,26 +18,15 @@ import { hardwareService, DeviceInfo } from './services/hardware';
 import { loadPresets, savePresets, loadPresetsAsync } from './services/presets';
 import { loadSettings, saveSettings, DEFAULT_ACTIVE_PRESETS, loadSettingsAsync } from './services/settings';
 import { LiquidChrome } from './components/LiquidChrome';
-import { Dock, DockItemData } from './components/Dock';
 import { K630_LAYOUT } from './engine/layout';
-import {
-  LayoutDashboard,
-  Sparkles,
-  Palette,
-  Bookmark,
-  Settings,
-  Play,
-  Pause,
-  Radio,
-  RotateCcw,
-  Film,
-} from 'lucide-react';
+import { EffectsBrowser } from './components/EffectsBrowser';
+import { ModernLightingWorkspace } from './components/ModernLightingWorkspace';
 
-const StudioView = React.lazy(() => import('./studio/StudioView'));
-import { StudioLoadingScreen } from './studio/components/StudioLoadingScreen';
+import { ArcadePanel } from './components/arcade/ArcadePanel';
 
 import './styles/theme.css';
 import './App.css';
+import './styles/modernLayout.css';
 
 const CHROME_BASE_COLOR: [number, number, number] = [
   0.047058823529411764,
@@ -73,7 +60,6 @@ export const App: React.FC = () => {
   const [currentParams, setCurrentParams] = useState<AnyEffectParams>(initialParams);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [engineInstance, setEngineInstance] = useState<AnimationEngine | null>(null);
 
   // Hardware State
@@ -564,119 +550,34 @@ export const App: React.FC = () => {
     }
   };
 
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'overview':
-        return 'Overview & Real-Time Monitor';
-      case 'effects':
-        return 'Lighting Effects Engine';
-      case 'pixel_art':
-        return 'Custom Pixel Art Studio';
-      case 'presets':
-        return 'Preset Management';
-      case 'settings':
-        return 'Hardware & USB Configuration';
-      case 'studio':
-        return 'RGB Animation Studio (After Effects)';
-    }
-  };
-
-  const dockItems: DockItemData[] = [
-    {
-      icon: <LayoutDashboard size={20} />,
-      label: 'Overview',
-      active: activeTab === 'overview',
-      onClick: () => setActiveTab('overview'),
-    },
-    {
-      icon: <Sparkles size={20} />,
-      label: 'Lighting Effects',
-      active: activeTab === 'effects',
-      onClick: () => setActiveTab('effects'),
-      menu: [
-        { label: 'Aurora Flow', onClick: () => handleEffectTypeChange('aurora') },
-        { label: 'Sine Wave', onClick: () => handleEffectTypeChange('flowing_curve') },
-        { label: 'Zigzag Wave', onClick: () => handleEffectTypeChange('zigzag_wave') },
-        { label: 'Continuous Wave', onClick: () => handleEffectTypeChange('continuous_wave') },
-        { label: 'Reactive Ripple', onClick: () => handleEffectTypeChange('reactive_ripple') },
-        { label: 'Key Flash', onClick: () => handleEffectTypeChange('key_flash') },
-        { label: 'Snake Trail', onClick: () => handleEffectTypeChange('snake_trail') },
-        { label: 'Shockwave', onClick: () => handleEffectTypeChange('shockwave') },
-        { label: 'Ember', onClick: () => handleEffectTypeChange('ember') },
-        { label: 'Neighbor Glow', onClick: () => handleEffectTypeChange('neighbor_glow') },
-        { label: 'Typing Intensity', onClick: () => handleEffectTypeChange('typing_intensity') },
-        { label: 'Electric Discharge', onClick: () => handleEffectTypeChange('electric_discharge') },
-        { label: 'Keystroke Ripple', onClick: () => handleEffectTypeChange('ripple') },
-        { label: 'Cyber Glitch', onClick: () => handleEffectTypeChange('glitch') },
-        { label: 'Matrix Rain', onClick: () => handleEffectTypeChange('matrix') },
-        { label: 'Music Pulse', onClick: () => handleEffectTypeChange('music_pulse') },
-        { label: 'Crimson Pulse', onClick: () => handleEffectTypeChange('pulse') },
-        { label: 'Starlight Drift', onClick: () => handleEffectTypeChange('starlight') },
-        { separator: true },
-        { label: 'Reset Defaults', icon: <RotateCcw size={12} />, onClick: handleResetDefaults },
-      ],
-    },
-    {
-      icon: <Film size={20} />,
-      label: 'Studio (AE)',
-      active: activeTab === 'studio',
-      onClick: () => setActiveTab('studio'),
-    },
-    {
-      icon: <Palette size={20} />,
-      label: 'Pixel Art Studio',
-      active: activeTab === 'pixel_art',
-      onClick: () => {
-        setActiveTab('pixel_art');
-        if (currentEffectType !== 'pixel_art') {
-          handleEffectTypeChange('pixel_art');
-        }
-      },
-    },
-    {
-      icon: <Bookmark size={20} />,
-      label: 'Presets Library',
-      active: activeTab === 'presets',
-      badge: presets.length > 0 ? presets.length : undefined,
-      onClick: () => setActiveTab('presets'),
-    },
-    { separator: true },
-    {
-      icon: isPlaying && !isPaused ? <Pause size={20} /> : <Play size={20} />,
-      label: isPlaying && !isPaused ? 'Pause Animation' : 'Play Animation',
-      active: isPlaying && !isPaused,
-      onClick: () => {
-        if (isPlaying && !isPaused) handlePause();
-        else handlePlay();
-      },
-    },
-    {
-      icon: <Radio size={20} />,
-      label: hardwareEnabled ? 'USB Output ON' : 'USB Output OFF',
-      active: hardwareEnabled,
-      badge: !deviceInfo.connected ? '!' : undefined,
-      onClick: handleToggleHardware,
-    },
-    {
-      icon: <Settings size={20} />,
-      label: 'Device Settings',
-      active: activeTab === 'settings',
-      onClick: () => setActiveTab('settings'),
-    },
-  ];
-
-  if (activeTab === 'studio') {
+  if (activeTab === 'arcade') {
     return (
-      <React.Suspense fallback={<StudioLoadingScreen />}>
-        <StudioView onReturnToApp={() => setActiveTab('overview')} />
-      </React.Suspense>
+      <div className="app-modern-root">
+        <div className="modern-app-bg">
+          <LiquidChrome baseColor={CHROME_BASE_COLOR} speed={1} amplitude={0.29} interactive={false} />
+        </div>
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            if (tab === 'pixel_art' && currentEffectType !== 'pixel_art') {
+              handleEffectTypeChange('pixel_art');
+            }
+          }}
+          isDeviceConnected={deviceInfo.connected}
+          deviceName={deviceInfo.device_name || 'Redragon K630'}
+        />
+        <ArcadePanel engine={engineInstance} />
+      </div>
     );
   }
 
+  const isLightingTab = activeTab === 'overview' || activeTab === 'effects';
+
   return (
-    <div className="app-container">
-      {/* Dynamic LiquidChrome WebGL Background from React Bits */}
-      <div className="app-liquid-chrome-bg">
+    <div className="app-modern-root">
+      {/* Dynamic Ambient Background */}
+      <div className="modern-app-bg">
         <LiquidChrome
           baseColor={CHROME_BASE_COLOR}
           speed={1}
@@ -685,6 +586,7 @@ export const App: React.FC = () => {
         />
       </div>
 
+      {/* Column 1: Left Navigation Sidebar */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={(tab) => {
@@ -694,60 +596,58 @@ export const App: React.FC = () => {
           }
         }}
         isDeviceConnected={deviceInfo.connected}
-        deviceName={deviceInfo.device_name}
-        isOpen={sidebarOpen}
+        deviceName={deviceInfo.device_name || 'Redragon K630'}
       />
 
-      <div className="app-main-wrapper">
-        <TopBar
-          pageTitle={getPageTitle()}
-          activeEffectName={EFFECT_REGISTRY[currentEffectType].name}
-          isPlaying={isPlaying}
-          isPaused={isPaused}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onStop={handleStop}
-          onOpenSettings={() => setActiveTab('settings')}
-          hardwareEnabled={hardwareEnabled}
-          onToggleHardware={handleToggleHardware}
-          sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
-        />
+      {isLightingTab ? (
+        <>
+          {/* Column 2: Effects Browser Column */}
+          <EffectsBrowser
+            currentEffectType={currentEffectType}
+            onSelectEffect={handleEffectTypeChange}
+          />
 
-        <main className="app-content-scroll">
-          {/* Virtual Keyboard is always prominently rendered in the workspace */}
-          <section className="keyboard-stage-section">
-            <VirtualKeyboard
-              engine={engineInstance}
-              currentFrame={activeTab === 'pixel_art' ? (pixelArtParams.frames[activePixelFrameIdx]?.pixels || {}) : undefined}
-              isPixelArtMode={activeTab === 'pixel_art'}
-              selectedKeyIds={selectedKeyIds}
-              onKeyClick={handleKeyClick}
-            />
-          </section>
-
-          {/* Contextual Workspace panels */}
-          <section className="controls-stage-section">
-            {(activeTab === 'overview' || activeTab === 'effects') && (
-              <EffectControls
-                currentType={currentEffectType}
-                params={currentParams}
-                onTypeChange={handleEffectTypeChange}
-                onParamsChange={handleParamsChange}
-                onResetDefaults={handleResetDefaults}
-                onSavePreset={handleSavePreset}
-                presets={presets}
-                activePresetId={activePresetId}
-                activePresetByEffect={activePresetByEffect}
-                onApplyPreset={handleApplyPreset}
-                onDuplicatePreset={handleDuplicatePreset}
-                onDeletePreset={handleDeletePreset}
-                hardwareEnabled={hardwareEnabled}
-                hardwareStatus={hardwareStatus}
-              />
-            )}
-
-            {activeTab === 'pixel_art' && (
+          {/* Column 3: Modern Lighting Workspace Pane */}
+          <ModernLightingWorkspace
+            currentType={currentEffectType}
+            params={currentParams}
+            engine={engineInstance}
+            onParamsChange={handleParamsChange}
+            onResetDefaults={handleResetDefaults}
+            onSavePreset={handleSavePreset}
+            presets={presets}
+            activePresetId={activePresetId}
+            onApplyPreset={handleApplyPreset}
+            onDuplicatePreset={handleDuplicatePreset}
+            onDeletePreset={handleDeletePreset}
+            hardwareEnabled={hardwareEnabled}
+            onToggleHardware={handleToggleHardware}
+            isPlaying={isPlaying}
+            isPaused={isPaused}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onStop={handleStop}
+          />
+        </>
+      ) : (
+        /* Alternative Tabs (Pixel Art, Presets / Keybinds, Settings) */
+        <div className="modern-lighting-workspace">
+          {activeTab === 'pixel_art' && (
+            <>
+              <div className="workspace-preview-section">
+                <div className="preview-section-label">PIXEL ART CANVAS</div>
+                <div className="preview-keyboard-wrapper">
+                  <VirtualKeyboard
+                    engine={engineInstance}
+                    effectType="pixel_art"
+                    currentFrame={pixelArtParams.frames[activePixelFrameIdx]?.pixels || {}}
+                    isPixelArtMode={true}
+                    selectedKeyIds={selectedKeyIds}
+                    onKeyClick={handleKeyClick}
+                    hideHeader={false}
+                  />
+                </div>
+              </div>
               <PixelArtEditor
                 params={pixelArtParams}
                 onChange={handlePixelArtChange}
@@ -771,53 +671,40 @@ export const App: React.FC = () => {
                 onClearSelection={() => setSelectedKeyIds(new Set())}
                 onSelectAll={() => setSelectedKeyIds(new Set(K630_LAYOUT.map((k) => k.id)))}
               />
-            )}
+            </>
+          )}
 
-            {activeTab === 'presets' && (
-              <PresetsView
-                presets={presets}
-                activePresetId={activePresetId}
-                activePresetByEffect={activePresetByEffect}
-                currentEffectType={currentEffectType}
-                onApplyPreset={handleApplyPreset}
-                onDuplicatePreset={handleDuplicatePreset}
-                onDeletePreset={handleDeletePreset}
-                onImportPresets={handleImportPresets}
-              />
-            )}
+          {activeTab === 'presets' && (
+            <PresetsView
+              presets={presets}
+              activePresetId={activePresetId}
+              activePresetByEffect={activePresetByEffect}
+              currentEffectType={currentEffectType}
+              onApplyPreset={handleApplyPreset}
+              onDuplicatePreset={handleDuplicatePreset}
+              onDeletePreset={handleDeletePreset}
+              onImportPresets={handleImportPresets}
+            />
+          )}
 
-            {activeTab === 'settings' && (
-              <DeviceSettingsView
-                isDeviceConnected={deviceInfo.connected}
-                deviceInfo={deviceInfo}
-                hardwareStatus={hardwareStatus}
-                hardwareError={hardwareError}
-                hardwareEnabled={hardwareEnabled}
-                onToggleHardware={handleToggleHardware}
-                onTestDevice={(colorHex) => hardwareService.testDeviceFrame(colorHex)}
-                fpsLimit={fpsLimit}
-                onFpsLimitChange={(fps) => setFpsLimit(fps)}
-                onRefreshDevice={checkDevice}
-                isStartupEnabled={isStartupEnabled}
-                onToggleStartup={handleToggleStartup}
-              />
-            )}
-          </section>
-        </main>
-
-        {/* React Bits Floating Dock */}
-        <Dock
-          items={dockItems}
-          position="bottom"
-          baseItemSize={48}
-          magnification={68}
-          panelHeight={64}
-          gap={10}
-          bounce={true}
-          theme="dark"
-          accentColor="#FFFFFF"
-        />
-      </div>
+          {activeTab === 'settings' && (
+            <DeviceSettingsView
+              isDeviceConnected={deviceInfo.connected}
+              deviceInfo={deviceInfo}
+              hardwareStatus={hardwareStatus}
+              hardwareError={hardwareError}
+              hardwareEnabled={hardwareEnabled}
+              onToggleHardware={handleToggleHardware}
+              onTestDevice={(colorHex) => hardwareService.testDeviceFrame(colorHex)}
+              fpsLimit={fpsLimit}
+              onFpsLimitChange={(fps) => setFpsLimit(fps)}
+              onRefreshDevice={checkDevice}
+              isStartupEnabled={isStartupEnabled}
+              onToggleStartup={handleToggleStartup}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };

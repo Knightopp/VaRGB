@@ -382,9 +382,12 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // Intercept close event: prevent app shutdown and hide window to system tray
-                api.prevent_close();
-                let _ = window.hide();
+                #[cfg(not(debug_assertions))]
+                {
+                    // Intercept close event in production: prevent app shutdown and hide window to system tray
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
             }
         })
         .manage(AppState {
