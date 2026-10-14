@@ -63,22 +63,29 @@ fn configure_startup_launch(enable: bool) -> Result<(), String> {
     use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
 
     let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
+    let stale_names = ["k630-studio", "tauri-app", "VaRGB", "vazorism productions"];
 
     // 1. Clean up any stale or unquoted entries in HKLM if present
     if let Ok(hklm_run) = LOCAL_MACHINE.open(run_subkey) {
         let _ = hklm_run.remove_value(APP_REGISTRY_NAME);
+        for stale in &stale_names {
+            let _ = hklm_run.remove_value(stale);
+        }
     }
 
     let hkcu_run = CURRENT_USER
         .create(run_subkey)
         .map_err(|e| format!("Failed to open HKCU Run key: {e}"))?;
 
+    for stale in &stale_names {
+        let _ = hkcu_run.remove_value(stale);
+    }
+
     if enable {
         let exe_path = current_exe().map_err(|e| format!("Failed to get current executable path: {e}"))?;
         let exe_str = exe_path.to_str().ok_or("Invalid exe path unicode")?;
-        // CRITICAL: Always enclose the executable path in double quotes so Windows handles spaces in user folders
-        // (such as "C:\Users\ABHIRAM C S\...") without splitting at "ABHIRAM" and prompting "Which app to open ABHIRAM".
-        let quoted_cmd = format!("\"{}\"", exe_str);
+        // Always enclose in quotes and pass --minimized so Windows startup launches quietly into the tray
+        let quoted_cmd = format!("\"{}\" --minimized", exe_str);
         hkcu_run
             .set_string(APP_REGISTRY_NAME, &quoted_cmd)
             .map_err(|e| format!("Failed to write HKCU Run value: {e}"))?;
@@ -265,6 +272,14 @@ pub fn run() {
     debug_assert_eq!(K630_KEY_IDS.len(), K630_LED_INDICES.len());
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            eprintln!("[VaRGB] Secondary instance detected; bringing main window to front.");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -283,15 +298,22 @@ pub fn run() {
             {
                 use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
                 let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
-                // Clean up stale or broken unquoted entries in HKLM
+                let stale_names = ["k630-studio", "tauri-app", "VaRGB", "vazorism productions"];
+                // Clean up stale entries in HKLM
                 if let Ok(hklm_run) = LOCAL_MACHINE.open(run_subkey) {
                     let _ = hklm_run.remove_value(APP_REGISTRY_NAME);
+                    for stale in &stale_names {
+                        let _ = hklm_run.remove_value(stale);
+                    }
                 }
-                // If HKCU has an existing entry, verify and enforce quoting
+                // If HKCU has an existing entry, verify and enforce quoting + --minimized
                 if let Ok(hkcu_run) = CURRENT_USER.open(run_subkey) {
+                    for stale in &stale_names {
+                        let _ = hkcu_run.remove_value(stale);
+                    }
                     if let Ok(val) = hkcu_run.get_string(APP_REGISTRY_NAME) {
                         let trimmed = val.trim();
-                        if !trimmed.is_empty() && (!trimmed.starts_with('"') || !trimmed.ends_with('"')) {
+                        if !trimmed.is_empty() && (!trimmed.starts_with('"') || !trimmed.contains("--minimized")) {
                             let _ = configure_startup_launch(true);
                         }
                     }
@@ -343,6 +365,18 @@ pub fn run() {
             let _tray = tray_builder.build(app)?;
 
             keyboard_hook::hook::start(app.handle().clone());
+
+            // Check if launched with --minimized / --hidden
+            let is_minimized_launch = std::env::args().any(|arg| arg == "--minimized" || arg == "--hidden" || arg == "-m");
+            if let Some(window) = app.get_webview_window("main") {
+                if !is_minimized_launch {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                } else {
+                    eprintln!("[VaRGB] Started minimized to system tray.");
+                }
+            }
 
             Ok(())
         })

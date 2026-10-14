@@ -8,9 +8,10 @@ import {
   Cpu,
   CheckCircle2,
   AlertCircle,
+  Film,
 } from 'lucide-react';
 
-export type NavTab = 'overview' | 'effects' | 'pixel_art' | 'presets' | 'settings';
+export type NavTab = 'overview' | 'effects' | 'pixel_art' | 'presets' | 'settings' | 'studio';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'overview' as NavTab, label: 'Overview', icon: LayoutDashboard },
     { id: 'effects' as NavTab, label: 'Lighting Effects', icon: Sparkles },
+    { id: 'studio' as NavTab, label: 'Studio (AE)', icon: Film },
     { id: 'pixel_art' as NavTab, label: 'Custom Pixel Art', icon: Palette },
     { id: 'presets' as NavTab, label: 'Presets', icon: Bookmark },
     { id: 'settings' as NavTab, label: 'Device Settings', icon: Sliders },

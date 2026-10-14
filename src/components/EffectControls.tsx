@@ -1581,6 +1581,2177 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
             )}
           </div>
         )}
+
+        {/* Thermal Heatmap Controls */}
+        {currentType === 'thermal_heatmap' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Decay Rate: {((params as any).decayRate ?? 0.08).toFixed(2)}/s</span>
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.25"
+                  step="0.01"
+                  value={(params as any).decayRate ?? 0.08}
+                  onChange={(e) => updateParam('decayRate', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Hit Strength: {((params as any).hitStrength ?? 0.25).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.10"
+                  max="0.60"
+                  step="0.05"
+                  value={(params as any).hitStrength ?? 0.25}
+                  onChange={(e) => updateParam('hitStrength', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Bleed Strength: {((params as any).bleedStrength ?? 0.06).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.01"
+                  max="0.15"
+                  step="0.01"
+                  value={(params as any).bleedStrength ?? 0.06}
+                  onChange={(e) => updateParam('bleedStrength', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Thermal gradient: Off &rarr; Deep Blue (#0022FF) &rarr; Cyan (#00FF66) &rarr; Orange (#FF8800) &rarr; White-Hot
+            </div>
+          </div>
+        )}
+
+        {/* Gravity Drop Controls */}
+        {currentType === 'gravity_drop' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Fall Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Particle Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 200, b: 255 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 200, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Laser Crosshair Controls */}
+        {currentType === 'laser_crosshair' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Beam Duration: {((params as any).beamDuration ?? 0.35).toFixed(2)}s</span>
+                <input
+                  type="range"
+                  min="0.10"
+                  max="1.00"
+                  step="0.05"
+                  value={(params as any).beamDuration ?? 0.35}
+                  onChange={(e) => updateParam('beamDuration', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Laser Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 60 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 60 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Base Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).baseColor || { r: 0, g: 0, b: 0 })}
+                    onChange={(e) => updateParam('baseColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).baseColor || { r: 0, g: 0, b: 0 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pong Bounce Controls */}
+        {currentType === 'pong_bounce' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Trail Length: {(params as any).trailLength ?? 4}</span>
+                <input
+                  type="range"
+                  min="2"
+                  max="8"
+                  step="1"
+                  value={(params as any).trailLength ?? 4}
+                  onChange={(e) => updateParam('trailLength', parseInt(e.target.value, 10))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Ball & Trail Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 120 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 120 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Radar Sweep Controls */}
+        {currentType === 'radar_sweep' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Sweep Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Trail Arc Width: {((params as any).trailWidth ?? 1.4).toFixed(1)} rad</span>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="2.5"
+                  step="0.1"
+                  value={(params as any).trailWidth ?? 1.4}
+                  onChange={(e) => updateParam('trailWidth', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Phosphor Glow Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 68 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 68 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Vortex Pinwheel Controls */}
+        {currentType === 'vortex_pinwheel' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Spin Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Spiral Twist: {((params as any).twist ?? 0.12).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.30"
+                  step="0.02"
+                  value={(params as any).twist ?? 0.12}
+                  onChange={(e) => updateParam('twist', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lava Lamp Controls */}
+        {currentType === 'lava_lamp' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Drift Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Metaball Count: {(params as any).blobCount ?? 4}</span>
+                <input
+                  type="range"
+                  min="2"
+                  max="6"
+                  step="1"
+                  value={(params as any).blobCount ?? 4}
+                  onChange={(e) => updateParam('blobCount', parseInt(e.target.value, 10))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Molten Foreground</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).foregroundColor || { r: 255, g: 51, b: 0 })}
+                    onChange={(e) => updateParam('foregroundColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).foregroundColor || { r: 255, g: 51, b: 0 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Deep Background</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).backgroundColor || { r: 26, g: 0, b: 51 })}
+                    onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 26, g: 0, b: 51 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Raindrops Controls */}
+        {currentType === 'raindrops' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Ripple Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Spawn Interval: {((params as any).spawnInterval ?? 0.3).toFixed(2)}s</span>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).spawnInterval ?? 0.3}
+                  onChange={(e) => updateParam('spawnInterval', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Max Radius: {((params as any).maxRadius ?? 3.5).toFixed(1)}</span>
+                <input
+                  type="range"
+                  min="2.0"
+                  max="6.0"
+                  step="0.5"
+                  value={(params as any).maxRadius ?? 3.5}
+                  onChange={(e) => updateParam('maxRadius', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Ripple Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 100, g: 220, b: 255 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 100, g: 220, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Screen Ambilight Controls */}
+        {currentType === 'screen_ambilight' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Smoothing: {((params as any).smoothing ?? 0.25).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="0.60"
+                  step="0.05"
+                  value={(params as any).smoothing ?? 0.25}
+                  onChange={(e) => updateParam('smoothing', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Uses screen capture downsampled to 14&times;5 matrix. If permission is denied or pending, falls back to ambient spectrum demo.
+            </div>
+          </div>
+        )}
+
+        {/* Telemetry Bars Controls */}
+        {currentType === 'telemetry_bars' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Poll Interval: {(params as any).pollInterval ?? 500} ms</span>
+                <input
+                  type="range"
+                  min="100"
+                  max="2000"
+                  step="100"
+                  value={(params as any).pollInterval ?? 500}
+                  onChange={(e) => updateParam('pollInterval', parseInt(e.target.value, 10))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Row 0: CPU Load &bull; Row 1: Memory / GPU &bull; Row 2: RAM Telemetry with Green &rarr; Yellow &rarr; Red scaling.
+            </div>
+          </div>
+        )}
+
+        {/* Spectrum EQ Controls */}
+        {currentType === 'spectrum_eq' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Sensitivity: {((params as any).sensitivity ?? 1.5).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).sensitivity ?? 1.5}
+                  onChange={(e) => updateParam('sensitivity', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field" style={{ display: 'flex', alignItems: 'center', paddingTop: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#fff' }}>
+                  <input
+                    type="checkbox"
+                    checked={(params as any).useRainbow ?? true}
+                    onChange={(e) => updateParam('useRainbow', e.target.checked)}
+                  />
+                  <span>Rainbow Gradient Mode</span>
+                </label>
+              </div>
+            </div>
+            {!((params as any).useRainbow ?? true) && (
+              <div className="color-pickers-row">
+                <div className="control-field">
+                  <span className="field-title">Solid Bar Color</span>
+                  <div className="color-picker-box">
+                    <input
+                      type="color"
+                      value={rgbToHex((params as any).primaryColor || { r: 0, g: 200, b: 255 })}
+                      onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                    />
+                    <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 200, b: 255 })}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Custom Zones Controls */}
+        {currentType === 'custom_zones' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Background Dim Level: {Math.round(((params as any).dimLevel ?? 0.1) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="0.30"
+                  step="0.05"
+                  value={(params as any).dimLevel ?? 0.1}
+                  onChange={(e) => updateParam('dimLevel', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Zone Profile</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={`effect-chip ${((params as any).preset ?? 'gamer') === 'gamer' ? 'active' : ''}`}
+                  onClick={() => updateParam('preset', 'gamer')}
+                >
+                  <span>Gamer (WASD + 1-4 + Modifiers)</span>
+                </button>
+                <button
+                  className={`effect-chip ${((params as any).preset ?? 'gamer') === 'coder' ? 'active' : ''}`}
+                  onClick={() => updateParam('preset', 'coder')}
+                >
+                  <span>Coder (Esc + Tab + Brackets + IJKL)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Zone Primary Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 50, b: 50 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 50, b: 50 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Zone Accent Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).accentColor || { r: 0, g: 200, b: 255 })}
+                    onChange={(e) => updateParam('accentColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).accentColor || { r: 0, g: 200, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AFK Screensaver Controls */}
+        {currentType === 'afk_screensaver' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Idle Timeout: {(params as any).idleTimeout ?? 120}s</span>
+                <input
+                  type="range"
+                  min="10"
+                  max="300"
+                  step="10"
+                  value={(params as any).idleTimeout ?? 120}
+                  onChange={(e) => updateParam('idleTimeout', parseInt(e.target.value, 10))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Crossfade: {((params as any).crossfadeDuration ?? 2.0).toFixed(1)}s</span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="5.0"
+                  step="0.5"
+                  value={(params as any).crossfadeDuration ?? 2.0}
+                  onChange={(e) => updateParam('crossfadeDuration', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Typing Dim: {Math.round(((params as any).dimLevel ?? 0.15) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="0.40"
+                  step="0.05"
+                  value={(params as any).dimLevel ?? 0.15}
+                  onChange={(e) => updateParam('dimLevel', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Idle Screensaver Animation</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={`effect-chip ${((params as any).screensaverMode ?? 'aurora') === 'aurora' ? 'active' : ''}`}
+                  onClick={() => updateParam('screensaverMode', 'aurora')}
+                >
+                  <span>Aurora Flow</span>
+                </button>
+                <button
+                  className={`effect-chip ${((params as any).screensaverMode ?? 'aurora') === 'matrix_rain' ? 'active' : ''}`}
+                  onClick={() => updateParam('screensaverMode', 'matrix_rain')}
+                >
+                  <span>Matrix Rain</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Active Typing Resting Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).dimColor || { r: 40, g: 50, b: 70 })}
+                    onChange={(e) => updateParam('dimColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).dimColor || { r: 40, g: 50, b: 70 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Game of Life Controls */}
+        {currentType === 'game_of_life' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Fade Rate: {((params as any).fadeSpeed ?? 9.0).toFixed(0)}</span>
+                <input
+                  type="range"
+                  min="4.0"
+                  max="16.0"
+                  step="1.0"
+                  value={(params as any).fadeSpeed ?? 9.0}
+                  onChange={(e) => updateParam('fadeSpeed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Alive Cell Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).aliveColor || { r: 0, g: 255, b: 120 })}
+                    onChange={(e) => updateParam('aliveColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).aliveColor || { r: 0, g: 255, b: 120 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Keypress Seed Accent</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).accentColor || { r: 255, g: 0, b: 180 })}
+                    onChange={(e) => updateParam('accentColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).accentColor || { r: 255, g: 0, b: 180 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pac-Man Arcade Controls */}
+        {currentType === 'pacman_arcade' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Chase Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              🟡 Pac-Man (#FFFF00) &bull; 🔴 Blinky (#FF0000) &bull; 🌸 Pinky (#FFB8FF) &bull; 🩵 Inky (#00FFFF) &bull; 🟠 Clyde (#FFB852)
+            </div>
+          </div>
+        )}
+
+        {/* DVD Bounce Controls */}
+        {currentType === 'dvd_bounce' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Bounce Velocity: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              2&times;2 logo shifts hue on wall impacts. Corner hits trigger an instant full-board rainbow jackpot celebration!
+            </div>
+          </div>
+        )}
+
+        {/* Wave Pond Controls */}
+        {currentType === 'wave_pond' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Wave Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Damping: {((params as any).damping ?? 0.92).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.85"
+                  max="0.98"
+                  step="0.01"
+                  value={(params as any).damping ?? 0.92}
+                  onChange={(e) => updateParam('damping', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              2D wave equation: Press any key to drop a water ripple into the deep ocean blue matrix.
+            </div>
+          </div>
+        )}
+
+        {/* Doom Fire Controls */}
+        {currentType === 'doom_fire' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Burn Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Cooling Rate: {((params as any).coolingRate ?? 0.20).toFixed(2)}</span>
+                <input
+                  type="range"
+                  min="0.10"
+                  max="0.40"
+                  step="0.02"
+                  value={(params as any).coolingRate ?? 0.20}
+                  onChange={(e) => updateParam('coolingRate', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Plasma Shader Controls */}
+        {currentType === 'plasma_shader' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Plasma Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Color Palette Mode</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={`effect-chip ${((params as any).mode ?? 'rainbow') === 'rainbow' ? 'active' : ''}`}
+                  onClick={() => updateParam('mode', 'rainbow')}
+                >
+                  <span>Full Spectrum Rainbow</span>
+                </button>
+                <button
+                  className={`effect-chip ${((params as any).mode ?? 'rainbow') === 'duo' ? 'active' : ''}`}
+                  onClick={() => updateParam('mode', 'duo')}
+                >
+                  <span>Dual-Tone Gradient</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lightning Storm Controls */}
+        {currentType === 'lightning_storm' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title">Strike Interval: {((params as any).strikeInterval ?? 2.5).toFixed(1)}s</span>
+                <input
+                  type="range"
+                  min="1.0"
+                  max="6.0"
+                  step="0.5"
+                  value={(params as any).strikeInterval ?? 2.5}
+                  onChange={(e) => updateParam('strikeInterval', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Lightning Bolt Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).boltColor || { r: 136, g: 0, b: 255 })}
+                    onChange={(e) => updateParam('boltColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).boltColor || { r: 136, g: 0, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Event Horizon Controls */}
+        {currentType === 'event_horizon' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Rotation Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Black hole center at (6.5, 2.0) with swirling golden accretion disk and infalling cosmic stardust spiral.
+            </div>
+          </div>
+        )}
+
+        {/* WPM Overdrive Controls */}
+        {currentType === 'wpm_overdrive' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+              <div>&bull; <strong>0–35 WPM:</strong> Calm cyan breathing</div>
+              <div>&bull; <strong>35–75 WPM:</strong> Neon purple pulse + horizontal speed-lines</div>
+              <div>&bull; <strong>75+ WPM:</strong> Full nitro mode with high-speed chroma shift &amp; keystroke sparks</div>
+            </div>
+          </div>
+        )}
+
+        {/* Fireworks Controls */}
+        {currentType === 'fireworks' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Press any key to launch an ascending rocket that detonates into 8 gravity-affected spark particles.
+            </div>
+          </div>
+        )}
+
+        {/* Domino Topple Controls */}
+        {currentType === 'domino_topple' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Topple Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Domino Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).dominoColor || { r: 0, g: 220, b: 255 })}
+                    onChange={(e) => updateParam('dominoColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).dominoColor || { r: 0, g: 220, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CRT Scanline Controls */}
+        {currentType === 'crt_scanline' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Scan Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Phosphor Beam Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).scanColor || { r: 0, g: 255, b: 136 })}
+                    onChange={(e) => updateParam('scanColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).scanColor || { r: 0, g: 255, b: 136 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DNA Helix Controls */}
+        {currentType === 'dna_helix' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Rotation Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Dual opposing sinusoidal waves in Cyan (#00FFFF) and Magenta (#FF00AA) linked by violet DNA rungs.
+            </div>
+          </div>
+        )}
+
+        {/* Pomodoro Bar Controls */}
+        {currentType === 'pomodoro_bar' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Timer Duration</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[5, 15, 25, 50].map((mins) => (
+                  <button
+                    key={mins}
+                    className={`effect-chip ${((params as any).durationMinutes ?? 25) === mins ? 'active' : ''}`}
+                    onClick={() => updateParam('durationMinutes', mins)}
+                  >
+                    <span>{mins} Min</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+              Drains across all 61 keys from Emerald Green &rarr; Amber &rarr; Crimson. Press any key to pause/resume or restart when finished.
+            </div>
+          </div>
+        )}
+
+        {/* Pathfinder A* Controls */}
+        {currentType === 'pathfinder_a_star' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Search Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Path Gold</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 215, b: 0 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 215, b: 0 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Frontier Cyan</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 136, b: 170 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 136, b: 170 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Goal Target</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).goalColor || { r: 255, g: 0, b: 85 })}
+                    onChange={(e) => updateParam('goalColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).goalColor || { r: 255, g: 0, b: 85 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Obstacle Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).obstacleColor || { r: 26, g: 26, b: 46 })}
+                    onChange={(e) => updateParam('obstacleColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).obstacleColor || { r: 26, g: 26, b: 46 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sort Visualizer Controls */}
+        {currentType === 'sort_visualizer' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Sort Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Sorted Bar Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 102 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 102 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Pointer Highlight</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 255, g: 255, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 255, g: 255, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Background Base</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).backgroundColor || { r: 10, g: 20, b: 15 })}
+                    onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 10, g: 20, b: 15 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Binary Counter Controls */}
+        {currentType === 'binary_counter' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Count Frequency: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Bit "1" Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 102 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 102 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Bit "0" Dim Base</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 26, b: 8 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 26, b: 8 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Boids Swarm Controls */}
+        {currentType === 'boids_swarm' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Flocking Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Leader Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 238, b: 255 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 238, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Follower Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 255, g: 0, b: 170 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 255, g: 0, b: 170 })}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Color Mode</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={`effect-chip ${((params as any).colorMode ?? 'rainbow') === 'rainbow' ? 'active' : ''}`}
+                  onClick={() => updateParam('colorMode', 'rainbow')}
+                >
+                  <span>Chroma Rainbow</span>
+                </button>
+                <button
+                  className={`effect-chip ${((params as any).colorMode) === 'palette' ? 'active' : ''}`}
+                  onClick={() => updateParam('colorMode', 'palette')}
+                >
+                  <span>Custom Duo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Magnetic Field Controls */}
+        {currentType === 'magnetic_field' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Drift Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">North Pole Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 34, b: 68 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 34, b: 68 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">South Pole Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 136, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 136, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Solar Eclipse Controls */}
+        {currentType === 'solar_eclipse' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Orbital Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Corona Gold</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 184, b: 0 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 184, b: 0 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Outer Violet</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 138, g: 43, b: 226 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 138, g: 43, b: 226 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Blizzard Drift Controls */}
+        {currentType === 'blizzard_drift' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Wind / Fall Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Snowflake Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 224, g: 247, b: 250 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 224, g: 247, b: 250 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Storm Background</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 13, g: 34, b: 58 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 13, g: 34, b: 58 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* EKG Heartbeat Controls */}
+        {currentType === 'ekg_heartbeat' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Heart Rate (BPM): {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Beam Trace Color</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 136 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 136 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Phosphor Glow</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 45, b: 20 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 45, b: 20 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Newton's Cradle Controls */}
+        {currentType === 'newtons_cradle' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Swing Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Pendulum Balls</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 229, b: 255 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 229, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Impact Shockwave</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 255, g: 0, b: 119 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 255, g: 0, b: 119 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Frost Shatter Controls */}
+        {currentType === 'frost_shatter' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Ray Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Fracture Core</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 255, b: 255 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 255, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Glacier Cool-down</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 204, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 204, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Frost Base</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).backgroundColor || { r: 2, g: 11, b: 20 })}
+                    onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 2, g: 11, b: 20 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Combo Multiplier Controls */}
+        {currentType === 'combo_multiplier' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Animation Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Tier 1 Edge (10+)</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 255, b: 136 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 255, b: 136 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Tier 2 Ring (30+)</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 215, b: 0 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 215, b: 0 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Tier 3 Nitro (60+)</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).overdriveColor || { r: 255, g: 0, b: 102 })}
+                    onChange={(e) => updateParam('overdriveColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).overdriveColor || { r: 255, g: 0, b: 102 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Spotlight Lantern Controls */}
+        {currentType === 'spotlight_lantern' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Chase Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Beam Core</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 170, b: 51 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 170, b: 51 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Lantern Halo</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 212, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 212, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reaction Diffusion Controls */}
+        {currentType === 'reaction_diffusion' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Morphogen Speed: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Morphogen B (Coral)</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 170 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 0, g: 255, b: 170 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Substrate A (Base)</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 17, g: 0, b: 51 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 17, g: 0, b: 51 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Kaleidoscope Controls */}
+        {currentType === 'kaleidoscope' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Mandala Rotation: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Mandala Primary</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 136 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 136 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Mandala Accent</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 229, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 229, b: 255 })}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ margin: '10px 0' }}>
+              <span className="field-title" style={{ display: 'block', marginBottom: '6px' }}>Mandala Palette</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={`effect-chip ${((params as any).colorMode ?? 'rainbow') === 'rainbow' ? 'active' : ''}`}
+                  onClick={() => updateParam('colorMode', 'rainbow')}
+                >
+                  <span>Chroma Spectrum</span>
+                </button>
+                <button
+                  className={`effect-chip ${((params as any).colorMode) === 'palette' ? 'active' : ''}`}
+                  onClick={() => updateParam('colorMode', 'palette')}
+                >
+                  <span>Custom Duo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voronoi Cells Controls */}
+        {currentType === 'voronoi_cells' && (
+          <div className="effect-specific-controls">
+            <div className="slider-row">
+              <div className="control-field">
+                <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={(params as any).brightness ?? 1.0}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </div>
+              <div className="control-field">
+                <span className="field-title"><Zap size={12} /> Seed Velocity: {((params as any).speed ?? 1.0).toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3.0"
+                  step="0.1"
+                  value={(params as any).speed ?? 1.0}
+                  onChange={(e) => updateParam('speed', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="color-pickers-row">
+              <div className="control-field">
+                <span className="field-title">Cell Color A</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 85 })}
+                    onChange={(e) => updateParam('primaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).primaryColor || { r: 255, g: 0, b: 85 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Cell Color B</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).secondaryColor || { r: 0, g: 204, b: 255 })}
+                    onChange={(e) => updateParam('secondaryColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).secondaryColor || { r: 0, g: 204, b: 255 })}</span>
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">Border Line</span>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={rgbToHex((params as any).borderColor || { r: 0, g: 0, b: 0 })}
+                    onChange={(e) => updateParam('borderColor', hexToRgb(e.target.value))}
+                  />
+                  <span>{rgbToHex((params as any).borderColor || { r: 0, g: 0, b: 0 })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

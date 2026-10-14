@@ -20,7 +20,49 @@ export type EffectType =
   | 'neighbor_glow'
   | 'typing_intensity'
   | 'electric_discharge'
-  | 'flowing_curve';
+  | 'flowing_curve'
+  | 'thermal_heatmap'
+  | 'gravity_drop'
+  | 'laser_crosshair'
+  | 'pong_bounce'
+  | 'radar_sweep'
+  | 'vortex_pinwheel'
+  | 'lava_lamp'
+  | 'raindrops'
+  | 'screen_ambilight'
+  | 'telemetry_bars'
+  | 'spectrum_eq'
+  | 'custom_zones'
+  | 'afk_screensaver'
+  | 'game_of_life'
+  | 'pacman_arcade'
+  | 'dvd_bounce'
+  | 'wave_pond'
+  | 'doom_fire'
+  | 'plasma_shader'
+  | 'lightning_storm'
+  | 'event_horizon'
+  | 'wpm_overdrive'
+  | 'fireworks'
+  | 'domino_topple'
+  | 'crt_scanline'
+  | 'dna_helix'
+  | 'pomodoro_bar'
+  | 'pathfinder_a_star'
+  | 'sort_visualizer'
+  | 'binary_counter'
+  | 'boids_swarm'
+  | 'magnetic_field'
+  | 'solar_eclipse'
+  | 'blizzard_drift'
+  | 'ekg_heartbeat'
+  | 'newtons_cradle'
+  | 'frost_shatter'
+  | 'combo_multiplier'
+  | 'spotlight_lantern'
+  | 'reaction_diffusion'
+  | 'kaleidoscope'
+  | 'voronoi_cells';
 
 export interface AuroraParams {
   speed: number;            // 0.1 to 3.0
@@ -324,6 +366,294 @@ export interface SineWaveParams {
 
 export type FlowingCurveParams = SineWaveParams;
 
+export interface ThermalHeatmapParams {
+  brightness: number;
+  decayRate: number;
+  hitStrength: number;
+  bleedStrength: number;
+}
+
+export interface GravityDropParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+}
+
+export interface LaserCrosshairParams {
+  brightness: number;
+  beamDuration: number;
+  primaryColor: RGBColor;
+  baseColor: RGBColor;
+}
+
+export interface PongBounceParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  trailLength: number;
+}
+
+export interface RadarSweepParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  trailWidth: number;
+}
+
+export interface VortexPinwheelParams {
+  brightness: number;
+  speed: number;
+  twist: number;
+}
+
+export interface LavaLampParams {
+  brightness: number;
+  speed: number;
+  backgroundColor: RGBColor;
+  foregroundColor: RGBColor;
+  blobCount: number;
+}
+
+export interface RaindropsParams {
+  brightness: number;
+  speed: number;
+  spawnInterval: number;
+  maxRadius: number;
+  primaryColor: RGBColor;
+}
+
+export interface ScreenAmbilightParams {
+  brightness: number;
+  smoothing: number;
+}
+
+export interface TelemetryBarsParams {
+  brightness: number;
+  pollInterval: number;
+}
+
+export interface SpectrumEQParams {
+  brightness: number;
+  sensitivity: number;
+  primaryColor: RGBColor;
+  useRainbow: boolean;
+}
+
+export type CustomZonePreset = 'gamer' | 'coder' | 'custom';
+
+export interface CustomZonesParams {
+  brightness: number;
+  preset: CustomZonePreset;
+  primaryColor: RGBColor;
+  accentColor: RGBColor;
+  dimLevel: number;
+}
+
+export type AfkScreensaverMode = 'aurora' | 'matrix_rain';
+
+export interface AfkScreensaverParams {
+  brightness: number;
+  idleTimeout: number;
+  crossfadeDuration: number;
+  screensaverMode: AfkScreensaverMode;
+  dimColor: RGBColor;
+  dimLevel: number;
+}
+
+export interface GameOfLifeParams {
+  brightness: number;
+  speed: number;
+  aliveColor: RGBColor;
+  accentColor: RGBColor;
+  fadeSpeed: number;
+}
+
+export interface PacmanArcadeParams {
+  brightness: number;
+  speed: number;
+}
+
+export interface DvdBounceParams {
+  brightness: number;
+  speed: number;
+}
+
+export interface WavePondParams {
+  brightness: number;
+  damping: number;
+  speed: number;
+}
+
+export interface DoomFireParams {
+  brightness: number;
+  speed: number;
+  coolingRate: number;
+}
+
+export interface PlasmaShaderParams {
+  brightness: number;
+  speed: number;
+  mode: 'rainbow' | 'duo';
+  primaryHue: number;
+  secondaryHue: number;
+}
+
+export interface LightningStormParams {
+  brightness: number;
+  strikeInterval: number;
+  boltColor: RGBColor;
+}
+
+export interface EventHorizonParams {
+  brightness: number;
+  speed: number;
+}
+
+export interface WpmOverdriveParams {
+  brightness: number;
+}
+
+export interface FireworksParams {
+  brightness: number;
+  speed: number;
+}
+
+export interface DominoToppleParams {
+  brightness: number;
+  speed: number;
+  dominoColor: RGBColor;
+}
+
+export interface CrtScanlineParams {
+  brightness: number;
+  speed: number;
+  scanColor: RGBColor;
+}
+
+export interface DnaHelixParams {
+  brightness: number;
+  speed: number;
+}
+
+export interface PomodoroBarParams {
+  brightness: number;
+  durationMinutes: number;
+  isRunning: boolean;
+}
+
+export interface PathfinderAStarParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  goalColor: RGBColor;
+  obstacleColor: RGBColor;
+}
+
+export interface SortVisualizerParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  backgroundColor: RGBColor;
+}
+
+export interface BinaryCounterParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface BoidsSwarmParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  colorMode: 'palette' | 'rainbow';
+}
+
+export interface MagneticFieldParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface SolarEclipseParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface BlizzardDriftParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface EkgHeartbeatParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface NewtonsCradleParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface FrostShatterParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  backgroundColor: RGBColor;
+}
+
+export interface ComboMultiplierParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  overdriveColor: RGBColor;
+}
+
+export interface SpotlightLanternParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface ReactionDiffusionParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+}
+
+export interface KaleidoscopeParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  colorMode: 'palette' | 'rainbow';
+}
+
+export interface VoronoiCellsParams {
+  brightness: number;
+  speed: number;
+  primaryColor: RGBColor;
+  secondaryColor: RGBColor;
+  borderColor: RGBColor;
+}
+
 export type AnyEffectParams =
   | AuroraParams
   | RippleParams
@@ -344,7 +674,49 @@ export type AnyEffectParams =
   | EmberParams
   | NeighborGlowParams
   | TypingIntensityParams
-  | ElectricDischargeParams;
+  | ElectricDischargeParams
+  | ThermalHeatmapParams
+  | GravityDropParams
+  | LaserCrosshairParams
+  | PongBounceParams
+  | RadarSweepParams
+  | VortexPinwheelParams
+  | LavaLampParams
+  | RaindropsParams
+  | ScreenAmbilightParams
+  | TelemetryBarsParams
+  | SpectrumEQParams
+  | CustomZonesParams
+  | AfkScreensaverParams
+  | GameOfLifeParams
+  | PacmanArcadeParams
+  | DvdBounceParams
+  | WavePondParams
+  | DoomFireParams
+  | PlasmaShaderParams
+  | LightningStormParams
+  | EventHorizonParams
+  | WpmOverdriveParams
+  | FireworksParams
+  | DominoToppleParams
+  | CrtScanlineParams
+  | DnaHelixParams
+  | PomodoroBarParams
+  | PathfinderAStarParams
+  | SortVisualizerParams
+  | BinaryCounterParams
+  | BoidsSwarmParams
+  | MagneticFieldParams
+  | SolarEclipseParams
+  | BlizzardDriftParams
+  | EkgHeartbeatParams
+  | NewtonsCradleParams
+  | FrostShatterParams
+  | ComboMultiplierParams
+  | SpotlightLanternParams
+  | ReactionDiffusionParams
+  | KaleidoscopeParams
+  | VoronoiCellsParams;
 
 export interface AnimationContext {
   keys: KeyDefinition[];

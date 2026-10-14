@@ -32,7 +32,11 @@ import {
   Pause,
   Radio,
   RotateCcw,
+  Film,
 } from 'lucide-react';
+
+const StudioView = React.lazy(() => import('./studio/StudioView'));
+import { StudioLoadingScreen } from './studio/components/StudioLoadingScreen';
 
 import './styles/theme.css';
 import './App.css';
@@ -572,6 +576,8 @@ export const App: React.FC = () => {
         return 'Preset Management';
       case 'settings':
         return 'Hardware & USB Configuration';
+      case 'studio':
+        return 'RGB Animation Studio (After Effects)';
     }
   };
 
@@ -609,6 +615,12 @@ export const App: React.FC = () => {
         { separator: true },
         { label: 'Reset Defaults', icon: <RotateCcw size={12} />, onClick: handleResetDefaults },
       ],
+    },
+    {
+      icon: <Film size={20} />,
+      label: 'Studio (AE)',
+      active: activeTab === 'studio',
+      onClick: () => setActiveTab('studio'),
     },
     {
       icon: <Palette size={20} />,
@@ -652,6 +664,14 @@ export const App: React.FC = () => {
       onClick: () => setActiveTab('settings'),
     },
   ];
+
+  if (activeTab === 'studio') {
+    return (
+      <React.Suspense fallback={<StudioLoadingScreen />}>
+        <StudioView onReturnToApp={() => setActiveTab('overview')} />
+      </React.Suspense>
+    );
+  }
 
   return (
     <div className="app-container">
