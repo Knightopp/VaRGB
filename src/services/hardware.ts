@@ -76,8 +76,8 @@ class HardwareBridge {
   private transmissionErrors: number = 0;
   private lastSendDurationMs: number = 0;
 
-  // Controller pacing: EVision MCU requires at least 25ms between frame reports
-  private readonly minIntervalBetweenSendsMs = 25;
+  // Controller pacing: EVision MCU allows 12ms minimum interval for smooth 60 FPS updates
+  private readonly minIntervalBetweenSendsMs = 12;
   // Keep the K630 in software control so firmware never reverts to onboard factory rainbow
   private readonly unchangedFrameKeepaliveMs = 85;
   private statusListener: ((status: 'connecting' | 'active' | 'error' | 'preview-only', message?: string) => void) | null = null;

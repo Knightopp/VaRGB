@@ -550,38 +550,16 @@ export const App: React.FC = () => {
     }
   };
 
-  if (activeTab === 'arcade') {
-    return (
-      <div className="app-modern-root">
-        <div className="modern-app-bg">
-          <LiquidChrome baseColor={CHROME_BASE_COLOR} speed={1} amplitude={0.29} interactive={false} />
-        </div>
-        <Sidebar
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            if (tab === 'pixel_art' && currentEffectType !== 'pixel_art') {
-              handleEffectTypeChange('pixel_art');
-            }
-          }}
-          isDeviceConnected={deviceInfo.connected}
-          deviceName={deviceInfo.device_name || 'Redragon K630'}
-        />
-        <ArcadePanel engine={engineInstance} />
-      </div>
-    );
-  }
-
   const isLightingTab = activeTab === 'overview' || activeTab === 'effects';
 
   return (
     <div className="app-modern-root">
-      {/* Dynamic Ambient Background */}
+      {/* Dynamic Ambient Background - Persistent Single WebGL Instance */}
       <div className="modern-app-bg">
         <LiquidChrome
           baseColor={CHROME_BASE_COLOR}
-          speed={1}
-          amplitude={0.29}
+          speed={0.8}
+          amplitude={0.25}
           interactive={false}
         />
       </div>
@@ -599,7 +577,10 @@ export const App: React.FC = () => {
         deviceName={deviceInfo.device_name || 'Redragon K630'}
       />
 
-      {isLightingTab ? (
+      {activeTab === 'arcade' ? (
+        <ArcadePanel engine={engineInstance} />
+      ) : isLightingTab ? (
+
         <>
           {/* Column 2: Effects Browser Column */}
           <EffectsBrowser

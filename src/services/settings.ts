@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pixelArtParams: DEFAULT_PIXEL_ART_PARAMS,
   activePresetId: 'factory-aurora',
   activePresetByEffect: DEFAULT_ACTIVE_PRESETS,
-  fpsLimit: 30,
+  fpsLimit: 60,
   hardwareEnabled: true,
   activeColor: { r: 255, g: 0, b: 0 },
   keyboardTheme: 'mechanical',

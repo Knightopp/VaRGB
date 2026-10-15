@@ -151,20 +151,47 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     return () => window.removeEventListener('vargb_kb_theme_change', handleStorageChange);
   }, []);
 
+  interface KeySubParts {
+    glow: HTMLElement | null;
+    body: HTMLElement | null;
+    legend: HTMLElement | null;
+    top: HTMLElement | null;
+    slit: HTMLElement | null;
+  }
+
   const litKeysRef = useRef<Set<string>>(new Set());
+  const keyPartsRef = useRef<Record<string, KeySubParts>>({});
+  const lastKeyColorRef = useRef<Record<string, RGBColor>>({});
 
   const applyKeyColorToElement = useCallback((
-    el: HTMLElement,
+    parts: KeySubParts | undefined,
     keyId: string,
     color?: RGBColor
   ) => {
+    if (!parts) return;
+
+    // Fast-path: if color is identical to previous frame, skip all DOM style updates!
+    const prev = lastKeyColorRef.current[keyId];
+    if (prev) {
+      if (color && prev.r === color.r && prev.g === color.g && prev.b === color.b) {
+        return;
+      }
+      if (!color && prev.r === 0 && prev.g === 0 && prev.b === 0) {
+        return;
+      }
+    } else if (!color) {
+      return;
+    }
+
+    lastKeyColorRef.current[keyId] = color ? { r: color.r, g: color.g, b: color.b } : { r: 0, g: 0, b: 0 };
+
     const isLit = Boolean(color && (color.r > 12 || color.g > 12 || color.b > 12));
     const r = color?.r ?? 0;
     const g = color?.g ?? 0;
     const b = color?.b ?? 0;
 
     // 1. Physical switch LED underglow radiating into gaps between keycaps
-    const glow = el.querySelector<HTMLElement>('.vk-switch-glow');
+    const glow = parts.glow;
     if (glow) {
       if (isLit && activeGapLighting !== 'off' && activeTheme !== 'classic') {
         const glowAlpha = activeGapLighting === 'subtle' ? 0.45 : 0.95;
@@ -184,7 +211,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     }
 
     // 2. Realistic keycap body skirt edge light catch in gaps vs Classic border glow vs Pudding
-    const body = el.querySelector<HTMLElement>('.vk-keycap-body');
+    const body = parts.body;
     if (body) {
       if (activeTheme === 'classic') {
         body.style.background = '';
@@ -206,7 +233,6 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
           body.style.background = 'linear-gradient(180deg, #18191c 50%, #101114 100%)';
         }
       } else {
-        // mechanical or stealth - ensure any previous pudding gradient is completely cleared
         body.style.background = '';
         if (isLit) {
           body.style.borderColor = 'rgba(255, 255, 255, 0.08)';
@@ -219,14 +245,14 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     }
 
     // 3. Realistic double-shot shine-through legend illumination
-    const legend = el.querySelector<HTMLElement>('.vk-legend');
+    const legend = parts.legend;
     if (legend) {
       if (isLit) {
         const hotR = Math.min(255, Math.round(r * 0.45 + 155));
         const hotG = Math.min(255, Math.round(g * 0.45 + 155));
         const hotB = Math.min(255, Math.round(b * 0.45 + 155));
         legend.style.color = `rgb(${hotR}, ${hotG}, ${hotB})`;
-        legend.style.textShadow = `0 0 2px rgba(255, 255, 255, 0.95), 0 0 6px rgba(${r}, ${g}, ${b}, 1), 0 0 14px rgba(${r}, ${g}, ${b}, 0.8), 0 0 22px rgba(${r}, ${g}, ${b}, 0.45)`;
+        legend.style.textShadow = `0 0 2px rgba(255, 255, 255, 0.95), 0 0 6px rgba(${r}, ${g}, ${b}, 1), 0 0 14px rgba(${r}, ${g}, ${b}, 0.8)`;
         legend.style.opacity = '1';
       } else {
         legend.style.color = 'rgba(255, 255, 255, 0.22)';
@@ -236,38 +262,30 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     }
 
     // 4. Keycap top dish with specular rim highlight from switch LED
-    const top = el.querySelector<HTMLElement>('.vk-keycap-top');
+    const top = parts.top;
     if (top) {
       if (isLit && activeTheme === 'mechanical') {
         const rimR = Math.min(255, Math.round(r * 0.5 + 140));
         const rimG = Math.min(255, Math.round(g * 0.5 + 140));
         const rimB = Math.min(255, Math.round(b * 0.5 + 140));
         top.style.boxShadow = `inset 0 1.5px 1px rgba(${rimR}, ${rimG}, ${rimB}, 0.45), inset 0 -1px 2px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5)`;
-        if (isPixelArtMode) {
-          top.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.35)`;
-        } else {
-          top.style.backgroundColor = '';
-        }
+        top.style.backgroundColor = isPixelArtMode ? `rgba(${r}, ${g}, ${b}, 0.35)` : '';
       } else {
         top.style.boxShadow = 'inset 0 1px 1px rgba(255, 255, 255, 0.12), inset 0 -1px 2px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5)';
-        if (isPixelArtMode) {
-          top.style.backgroundColor = 'linear-gradient(180deg, #22242a 0%, #15161a 100%)';
-        } else {
-          top.style.backgroundColor = '';
-        }
+        top.style.backgroundColor = isPixelArtMode ? 'linear-gradient(180deg, #22242a 0%, #15161a 100%)' : '';
       }
     }
 
     // 5. Spacebar glowing translucent slit
     if (keyId === 'space') {
-      const slit = el.querySelector<HTMLElement>('.vk-space-slit');
+      const slit = parts.slit;
       if (slit) {
         if (isLit) {
           const hotR = Math.min(255, Math.round(r * 0.45 + 155));
           const hotG = Math.min(255, Math.round(g * 0.45 + 155));
           const hotB = Math.min(255, Math.round(b * 0.45 + 155));
           slit.style.backgroundColor = `rgb(${hotR}, ${hotG}, ${hotB})`;
-          slit.style.boxShadow = `0 0 4px rgba(255, 255, 255, 0.95), 0 0 10px rgba(${r}, ${g}, ${b}, 1), 0 0 20px rgba(${r}, ${g}, ${b}, 0.75)`;
+          slit.style.boxShadow = `0 0 4px rgba(255, 255, 255, 0.95), 0 0 10px rgba(${r}, ${g}, ${b}, 1)`;
           slit.style.opacity = '1';
         } else {
           slit.style.backgroundColor = 'rgba(255, 255, 255, 0.22)';
@@ -278,15 +296,15 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     }
   }, [activeTheme, activeGapLighting, isPixelArtMode]);
 
-  // 60 FPS direct DOM updates for physical switch underglow and shine-through keycap legends
+  // 60 FPS direct DOM updates with zero-DOM-query child elements
   const updateColors = useCallback((frame: KeyFrameColor) => {
     lastFrameRef.current = frame;
     const currentLitKeys = new Set<string>();
 
     for (const [keyId, color] of Object.entries(frame)) {
-      const el = keyRefs.current[keyId];
-      if (el) {
-        applyKeyColorToElement(el, keyId, color);
+      const parts = keyPartsRef.current[keyId];
+      if (parts) {
+        applyKeyColorToElement(parts, keyId, color);
         if (color.r > 12 || color.g > 12 || color.b > 12) {
           currentLitKeys.add(keyId);
         }
@@ -296,9 +314,9 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     // Turn off keys that were previously lit but are no longer in this frame
     for (const oldKeyId of litKeysRef.current) {
       if (!frame[oldKeyId]) {
-        const el = keyRefs.current[oldKeyId];
-        if (el) {
-          applyKeyColorToElement(el, oldKeyId, undefined);
+        const parts = keyPartsRef.current[oldKeyId];
+        if (parts) {
+          applyKeyColorToElement(parts, oldKeyId, undefined);
         }
       }
     }
@@ -307,37 +325,33 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
   }, [applyKeyColorToElement]);
 
   const resetAllKeys = useCallback(() => {
-    for (const [, el] of Object.entries(keyRefs.current)) {
-      if (!el) continue;
-      const glow = el.querySelector<HTMLElement>('.vk-switch-glow');
-      if (glow) {
-        glow.style.background = 'none';
-        glow.style.boxShadow = 'none';
-        glow.style.opacity = '0';
+    for (const [keyId, parts] of Object.entries(keyPartsRef.current)) {
+      if (!parts) continue;
+      if (parts.glow) {
+        parts.glow.style.background = 'none';
+        parts.glow.style.boxShadow = 'none';
+        parts.glow.style.opacity = '0';
       }
-      const body = el.querySelector<HTMLElement>('.vk-keycap-body');
-      if (body) {
-        body.style.borderColor = '';
-        body.style.boxShadow = '';
-        body.style.background = '';
+      if (parts.body) {
+        parts.body.style.borderColor = '';
+        parts.body.style.boxShadow = '';
+        parts.body.style.background = '';
       }
-      const legend = el.querySelector<HTMLElement>('.vk-legend');
-      if (legend) {
-        legend.style.color = 'rgba(255, 255, 255, 0.22)';
-        legend.style.textShadow = 'none';
-        legend.style.opacity = '0.3';
+      if (parts.legend) {
+        parts.legend.style.color = 'rgba(255, 255, 255, 0.22)';
+        parts.legend.style.textShadow = 'none';
+        parts.legend.style.opacity = '0.3';
       }
-      const top = el.querySelector<HTMLElement>('.vk-keycap-top');
-      if (top) {
-        top.style.boxShadow = '';
-        top.style.backgroundColor = '';
+      if (parts.top) {
+        parts.top.style.boxShadow = '';
+        parts.top.style.backgroundColor = '';
       }
-      const slit = el.querySelector<HTMLElement>('.vk-space-slit');
-      if (slit) {
-        slit.style.backgroundColor = 'rgba(255, 255, 255, 0.22)';
-        slit.style.boxShadow = 'none';
-        slit.style.opacity = '0.3';
+      if (parts.slit) {
+        parts.slit.style.backgroundColor = 'rgba(255, 255, 255, 0.22)';
+        parts.slit.style.boxShadow = 'none';
+        parts.slit.style.opacity = '0.3';
       }
+      delete lastKeyColorRef.current[keyId];
     }
     litKeysRef.current.clear();
     lastFrameRef.current = {};
@@ -364,7 +378,8 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     } else if (!engine && currentFrame) {
       updateColors(currentFrame);
     }
-  });
+  }, [currentFrame, engine, updateColors]);
+
 
   // Group keys by row
   const rows = useMemo(() => {
@@ -434,6 +449,18 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
                     key={key.id}
                     ref={(el) => {
                       keyRefs.current[key.id] = el;
+                      if (el) {
+                        keyPartsRef.current[key.id] = {
+                          glow: el.querySelector('.vk-switch-glow'),
+                          body: el.querySelector('.vk-keycap-body'),
+                          legend: el.querySelector('.vk-legend'),
+                          top: el.querySelector('.vk-keycap-top'),
+                          slit: el.querySelector('.vk-space-slit'),
+                        };
+                      } else {
+                        delete keyPartsRef.current[key.id];
+                        delete lastKeyColorRef.current[key.id];
+                      }
                     }}
                     className={`vk-key-wrapper ${isSelected ? 'selected' : ''} ${
                       isPixelArtMode ? 'interactive-pixel' : ''

@@ -435,7 +435,6 @@
   box-sizing: border-box;
 }
 
-/* North-facing switch LED underglow radiating directly into the small gaps between keycaps */
 .vk-switch-glow {
   position: absolute;
   top: -6px;
@@ -444,10 +443,8 @@
   bottom: -3px;
   border-radius: 5px;
   pointer-events: none;
-  filter: blur(2.5px);
   z-index: 1;
   opacity: 0;
-  transition: opacity 0.12s ease;
 }
 
 /* Authentic 3D mechanical keycap body (opaque dark charcoal PBT) */
@@ -467,7 +464,7 @@
     0 5px 8px rgba(0, 0, 0, 0.85);
   display: flex;
   flex-direction: column;
-  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  transition: transform 0.05s ease;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -523,7 +520,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.08s ease, text-shadow 0.08s ease, opacity 0.08s ease;
 }
 
 /* Single letters: Q, W, E, etc. */
@@ -580,8 +576,8 @@
   height: 2.5px;
   border-radius: 2px;
   background-color: rgba(255, 255, 255, 0.25);
-  transition: background-color 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
 }
+
 
 /* -------------------------------------------------------------
    Virtual Keyboard Style Themes & Gap Modes

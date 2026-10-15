@@ -41,22 +41,18 @@ export class RippleEffect implements ILightingEffect {
       this.lastDemoTrigger = now;
     }
 
-    const maxDistances = new Map<ActiveWave, number>();
-    this.activeWaves = this.activeWaves.filter((wave) => {
-      const maxDistance = this.getMaxDistance(wave, ctx.keys);
-      maxDistances.set(wave, maxDistance);
-      return now - wave.startTime < sweepDuration;
-    });
+    this.activeWaves = this.activeWaves.filter((wave) => now - wave.startTime < sweepDuration);
 
     const frame: KeyFrameColor = {};
     const litColor = applyBrightness(this.params.waveColor, this.params.brightness);
     const ringThickness = 0.15;
+    const maxSweepDist = 3.2;
 
     for (const key of ctx.keys) {
       let reachedByWave = false;
       for (const wave of this.activeWaves) {
         const elapsed = now - wave.startTime;
-        const currentRadius = (maxDistances.get(wave) ?? 0) * Math.min(1, elapsed / sweepDuration);
+        const currentRadius = maxSweepDist * Math.min(1, elapsed / sweepDuration);
         const dx = (key.normX - wave.centerX) * 3;
         const dy = key.normY - wave.centerY;
         const distanceFromFront = Math.abs(Math.sqrt(dx * dx + dy * dy) - currentRadius);
@@ -73,13 +69,6 @@ export class RippleEffect implements ILightingEffect {
     return frame;
   }
 
-  private getMaxDistance(wave: ActiveWave, keys: AnimationContext['keys']): number {
-    return Math.max(...keys.map((key) => {
-      const dx = (key.normX - wave.centerX) * 3;
-      const dy = key.normY - wave.centerY;
-      return Math.sqrt(dx * dx + dy * dy);
-    }));
-  }
 
   reset(): void {
     this.activeWaves = [];

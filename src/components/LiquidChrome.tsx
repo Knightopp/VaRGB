@@ -51,8 +51,8 @@ export const LiquidChrome: React.FC<LiquidChromeProps> = ({
 
     const container = containerRef.current;
     const renderer = new Renderer({
-      dpr: Math.min(window.devicePixelRatio || 1, 1.5),
-      antialias: true,
+      dpr: 1.0,
+      antialias: false,
       powerPreference: 'high-performance',
     });
     const gl = renderer.gl;

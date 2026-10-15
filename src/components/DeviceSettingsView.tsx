@@ -181,7 +181,7 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
               <input
                 type="range"
                 min="15"
-                max="45"
+                max="60"
                 step="5"
                 value={fpsLimit}
                 onChange={(e) => onFpsLimitChange(parseInt(e.target.value))}
