@@ -318,21 +318,21 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
         <div className="settings-card full-width">
           <div className="card-header">
             <Power size={15} />
-            <h3>Windows Startup & Persistence Integration</h3>
+            <h3>Instant Priority Boot Launch</h3>
           </div>
           <div className="card-body">
             <div className="toggle-row">
               <div>
-                <strong>Launch on Windows Startup</strong>
+                <strong>Launch Instantly on Windows Boot</strong>
                 <p>
-                  Automatically start VaRGB on system boot and restore your active lighting effect, colors, and presets to the K630.
+                  Configured with Windows Task Scheduler with <strong>Highest Privilege & 0ms Delay on Logon</strong>, bypassing the standard Windows startup delay so VaRGB is the first app to control your K630.
                 </p>
               </div>
               <button
                 className={`toggle-btn ${isStartupEnabled ? 'active' : ''}`}
                 onClick={onToggleStartup}
               >
-                {isStartupEnabled ? 'AUTO-LAUNCH ON' : 'DISABLED'}
+                {isStartupEnabled ? 'INSTANT BOOT: ON' : 'DISABLED'}
               </button>
             </div>
           </div>
@@ -342,25 +342,25 @@ export const DeviceSettingsView: React.FC<DeviceSettingsViewProps> = ({
         <div className="settings-card full-width">
           <div className="card-header">
             <HardDrive size={15} />
-            <h3>Keyboard Memory & Persistence Architecture</h3>
+            <h3>Memory & Architecture Report</h3>
           </div>
           <div className="persistence-report">
             <div className="report-item">
-              <strong>1. Built-in Keyboard Lighting</strong>
+              <strong>1. Built-in Hardware Profiles (Offline)</strong>
               <p>
-                The K630 contains factory hardware modes switched via Fn shortcuts. The USB protocol streams dynamic color maps while software is running.
+                Configure permanent offline profiles, modes, and key remaps using the official Redragon app. They remain burned into the keyboard EEPROM across reboots and other PCs.
               </p>
             </div>
             <div className="report-item">
-              <strong>2. Uninterrupted Background Streaming</strong>
+              <strong>2. Priority Windows Boot Takeover</strong>
               <p>
-                VaRGB streams RGB frames continuously even when the window is minimized or running in the system tray, preventing firmware timeout and keeping custom animations active.
+                As soon as your Windows user logs in, VaRGB launches immediately without delay, seamlessly taking over the K630 with 60 FPS reactive lighting.
               </p>
             </div>
             <div className="report-item">
-              <strong>3. Permanent Disk Storage</strong>
+              <strong>3. Permanent PC Presets & Settings</strong>
               <p>
-                Presets and preferences are saved directly to local disk (%APPDATA%\com.k630.studio), automatically restoring your exact active effect and custom parameters upon reboot.
+                Presets, customized parameters, and themes persist on disk (%APPDATA%\com.k630.studio), automatically restored on every launch.
               </p>
             </div>
           </div>

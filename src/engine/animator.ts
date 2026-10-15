@@ -22,6 +22,7 @@ export class AnimationEngine {
   private hardwareIntervalMs: number = 33; // ~30 fps cap for USB transmission
   private inputUnsubscribe: (() => void) | null = null;
   private backgroundTimerId: number | null = null;
+  private lastFrame: KeyFrameColor = {};
 
   constructor(private keys: KeyDefinition[] = K630_LAYOUT) {
     this.setupKeyEventListener();
@@ -280,6 +281,7 @@ export class AnimationEngine {
       };
 
       const frame = this.effect.update(ctx);
+      this.lastFrame = frame;
       this.notifySubscribers(frame);
 
       // Hardware rate limiter: only push to USB when interval has elapsed
@@ -296,6 +298,10 @@ export class AnimationEngine {
       this.animFrameId = requestAnimationFrame(this.tick);
     }
   };
+
+  public getLastFrame(): KeyFrameColor {
+    return this.lastFrame;
+  }
 
   private notifySubscribers(frame: KeyFrameColor): void {
     for (const listener of this.listeners) {

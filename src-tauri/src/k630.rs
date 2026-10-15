@@ -24,6 +24,7 @@ pub const SOFTWARE_MODE_REPORT: [u8; HID_REPORT_LEN] = {
     report
 };
 
+
 // Index-aligned with the SignalRGB vLedNames/vLeds/vLedPositions arrays.
 // Names use the existing frontend key IDs; coordinates come from layout.rs on
 // the frontend and are intentionally not derived from the hardware LED index.
@@ -96,6 +97,7 @@ pub const K630_LED_INDICES: [u8; 61] = [
     82, 90, 98, 106, 3, 11, 19, 27, 35, 43, 51, 59, 67, 75, 83, 91, 107, 4, 20, 28, 36, 44, 52, 60,
     68, 76, 84, 92, 108, 5, 13, 21, 45, 77, 85, 93, 101,
 ];
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DeviceStatus {
@@ -252,7 +254,6 @@ impl DeviceManager {
         }
         Ok(())
     }
-
     pub fn send_rgb_frame(&self, device: &HidDevice, rgb_data: &[u8]) -> Result<(), String> {
         let packets = build_rgb_packets(rgb_data)?;
         for (index, packet) in packets.iter().enumerate() {
@@ -271,6 +272,7 @@ impl DeviceManager {
         Ok(())
     }
 }
+
 
 #[cfg(test)]
 mod tests {

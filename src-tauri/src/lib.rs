@@ -60,7 +60,11 @@ const APP_REGISTRY_NAME: &str = "VaRGB - vazorism productions";
 #[cfg(windows)]
 fn configure_startup_launch(enable: bool) -> Result<(), String> {
     use std::env::current_exe;
+    use std::process::Command;
+    use std::os::windows::process::CommandExt;
     use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
+
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
     let stale_names = ["k630-studio", "tauri-app", "VaRGB", "vazorism productions"];
@@ -86,11 +90,89 @@ fn configure_startup_launch(enable: bool) -> Result<(), String> {
         let exe_str = exe_path.to_str().ok_or("Invalid exe path unicode")?;
         // Always enclose in quotes and pass --minimized so Windows startup launches quietly into the tray
         let quoted_cmd = format!("\"{}\" --minimized", exe_str);
+
+        // A. Primary: HKCU Run entry
         hkcu_run
             .set_string(APP_REGISTRY_NAME, &quoted_cmd)
             .map_err(|e| format!("Failed to write HKCU Run value: {e}"))?;
+
+        // B. Disable Explorer's artificial 10-second startup delay (StartupDelayInMSec = 0)
+        let serialize_subkey = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize";
+        if let Ok(serialize_key) = CURRENT_USER.create(serialize_subkey) {
+            let _ = serialize_key.set_u32("StartupDelayInMSec", 0);
+        }
+
+        // C. Fast-Track: Windows Task Scheduler "onlogon" (starts immediately at login without Explorer queue delay)
+        let _ = Command::new("schtasks")
+            .args(&[
+                "/create",
+                "/tn", "VaRGB_FastBoot",
+                "/tr", &quoted_cmd,
+                "/sc", "onlogon",
+                "/rl", "highest",
+                "/f"
+            ])
+            .creation_flags(CREATE_NO_WINDOW)
+            .status()
+            .or_else(|_| {
+                // If highest privilege fails (e.g. non-admin user), try standard privilege
+                Command::new("schtasks")
+                    .args(&[
+                        "/create",
+                        "/tn", "VaRGB_FastBoot",
+                        "/tr", &quoted_cmd,
+                        "/sc", "onlogon",
+                        "/f"
+                    ])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .status()
+            });
+
+        // D. Shell Startup folder link (shell:startup)
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let startup_dir = std::path::PathBuf::from(appdata)
+                .join("Microsoft")
+                .join("Windows")
+                .join("Start Menu")
+                .join("Programs")
+                .join("Startup");
+            if startup_dir.exists() {
+                let lnk_path = startup_dir.join("VaRGB.lnk");
+                let ps_script = format!(
+                    "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{}'); $s.TargetPath = '{}'; $s.Arguments = '--minimized'; $s.Save()",
+                    lnk_path.to_string_lossy().replace('\'', "''"),
+                    exe_str.replace('\'', "''")
+                );
+                let _ = Command::new("powershell")
+                    .args(&["-NoProfile", "-NonInteractive", "-Command", &ps_script])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .status();
+            }
+        }
+
+        eprintln!("[VaRGB] Instant Priority Boot Launch registered (Run + StartupFolder + Serialize Delay 0ms)");
     } else {
         let _ = hkcu_run.remove_value(APP_REGISTRY_NAME);
+
+        // Remove Task Scheduler entry
+        let _ = Command::new("schtasks")
+            .args(&["/delete", "/tn", "VaRGB_FastBoot", "/f"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .status();
+
+        // Remove Shell Startup folder shortcut
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let lnk_path = std::path::PathBuf::from(appdata)
+                .join("Microsoft")
+                .join("Windows")
+                .join("Start Menu")
+                .join("Programs")
+                .join("Startup")
+                .join("VaRGB.lnk");
+            let _ = std::fs::remove_file(lnk_path);
+        }
+
+        eprintln!("[VaRGB] Startup launch disabled");
     }
 
     Ok(())
@@ -117,16 +199,21 @@ fn is_startup_launch_enabled() -> Result<bool, String> {
     {
         use windows_registry::CURRENT_USER;
         let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
-        match CURRENT_USER.open(run_subkey).and_then(|k| k.get_string(APP_REGISTRY_NAME)) {
-            Ok(val) => Ok(!val.trim().is_empty()),
-            Err(_) => Ok(false),
+        if let Ok(k) = CURRENT_USER.open(run_subkey) {
+            if let Ok(val) = k.get_string(APP_REGISTRY_NAME) {
+                if !val.trim().is_empty() {
+                    return Ok(true);
+                }
+            }
         }
+        Ok(false)
     }
     #[cfg(not(windows))]
     {
         Ok(false)
     }
 }
+
 
 fn get_app_storage_path(_app: &tauri::AppHandle, filename: &str) -> Result<PathBuf, String> {
     let base_dir = std::env::var_os("APPDATA")
@@ -265,6 +352,7 @@ fn disconnect_k630(state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Keep the LED map referenced here so frontend/backend mapping drift is visible
@@ -380,13 +468,13 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
                 #[cfg(not(debug_assertions))]
                 {
                     // Intercept close event in production: prevent app shutdown and hide window to system tray
-                    api.prevent_close();
-                    let _ = window.hide();
+                    _api.prevent_close();
+                    let _ = _window.hide();
                 }
             }
         })
