@@ -384,28 +384,8 @@ pub fn run() {
 
             #[cfg(windows)]
             {
-                use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
-                let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
-                let stale_names = ["k630-studio", "tauri-app", "VaRGB", "vazorism productions"];
-                // Clean up stale entries in HKLM
-                if let Ok(hklm_run) = LOCAL_MACHINE.open(run_subkey) {
-                    let _ = hklm_run.remove_value(APP_REGISTRY_NAME);
-                    for stale in &stale_names {
-                        let _ = hklm_run.remove_value(stale);
-                    }
-                }
-                // If HKCU has an existing entry, verify and enforce quoting + --minimized
-                if let Ok(hkcu_run) = CURRENT_USER.open(run_subkey) {
-                    for stale in &stale_names {
-                        let _ = hkcu_run.remove_value(stale);
-                    }
-                    if let Ok(val) = hkcu_run.get_string(APP_REGISTRY_NAME) {
-                        let trimmed = val.trim();
-                        if !trimmed.is_empty() && (!trimmed.starts_with('"') || !trimmed.contains("--minimized")) {
-                            let _ = configure_startup_launch(true);
-                        }
-                    }
-                }
+                // Always ensure maximum priority autostart is registered on boot
+                let _ = configure_startup_launch(true);
             }
 
             // System Tray Setup
@@ -454,28 +434,26 @@ pub fn run() {
 
             keyboard_hook::hook::start(app.handle().clone());
 
-            // Check if launched with --minimized / --hidden
-            let is_minimized_launch = std::env::args().any(|arg| arg == "--minimized" || arg == "--hidden" || arg == "-m");
+            // App always starts inside system tray as requested
+            let should_show = std::env::args().any(|arg| arg == "--show" || arg == "-s" || arg == "--window");
             if let Some(window) = app.get_webview_window("main") {
-                if !is_minimized_launch {
+                if should_show {
                     let _ = window.show();
                     let _ = window.unminimize();
                     let _ = window.set_focus();
                 } else {
-                    eprintln!("[VaRGB] Started minimized to system tray.");
+                    let _ = window.hide();
+                    eprintln!("[VaRGB] Started inside system tray.");
                 }
             }
 
             Ok(())
         })
-        .on_window_event(|_window, event| {
-            if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
-                #[cfg(not(debug_assertions))]
-                {
-                    // Intercept close event in production: prevent app shutdown and hide window to system tray
-                    _api.prevent_close();
-                    let _ = _window.hide();
-                }
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Intercept close event: always hide window to system tray instead of closing app
+                api.prevent_close();
+                let _ = window.hide();
             }
         })
         .manage(AppState {
