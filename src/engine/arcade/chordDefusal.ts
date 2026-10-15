@@ -37,7 +37,7 @@ export class ChordDefusalGame implements MiniGame {
   ];
   private readonly DEFUSE_COLOR: RGBColor = { r: 50, g: 255, b: 50 };
   private readonly BOMB_COLOR: RGBColor = { r: 255, g: 30, b: 10 };
-  private readonly BG_DIM: RGBColor = { r: 6, g: 3, b: 8 };
+  private readonly BG_DIM: RGBColor = { r: 0, g: 0, b: 0 };
   private readonly PRESSED_COLOR: RGBColor = { r: 200, g: 200, b: 255 };
 
   start(engine: GameEngine): void {

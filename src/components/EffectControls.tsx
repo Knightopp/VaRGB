@@ -1948,10 +1948,10 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
                 <div className="color-picker-box">
                   <input
                     type="color"
-                    value={rgbToHex((params as any).backgroundColor || { r: 26, g: 0, b: 51 })}
+                    value={rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}
                     onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
                   />
-                  <span>{rgbToHex((params as any).backgroundColor || { r: 26, g: 0, b: 51 })}</span>
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}</span>
                 </div>
               </div>
             </div>
@@ -2984,10 +2984,10 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
                 <div className="color-picker-box">
                   <input
                     type="color"
-                    value={rgbToHex((params as any).backgroundColor || { r: 10, g: 20, b: 15 })}
+                    value={rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}
                     onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
                   />
-                  <span>{rgbToHex((params as any).backgroundColor || { r: 10, g: 20, b: 15 })}</span>
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}</span>
                 </div>
               </div>
             </div>
@@ -3444,10 +3444,10 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
                 <div className="color-picker-box">
                   <input
                     type="color"
-                    value={rgbToHex((params as any).backgroundColor || { r: 2, g: 11, b: 20 })}
+                    value={rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}
                     onChange={(e) => updateParam('backgroundColor', hexToRgb(e.target.value))}
                   />
-                  <span>{rgbToHex((params as any).backgroundColor || { r: 2, g: 11, b: 20 })}</span>
+                  <span>{rgbToHex((params as any).backgroundColor || { r: 0, g: 0, b: 0 })}</span>
                 </div>
               </div>
             </div>

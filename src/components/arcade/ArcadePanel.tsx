@@ -3,6 +3,7 @@ import { GameEngine, MiniGame, SwitchReflexGame, ChordDefusalGame, MatrixSnakeGa
 import { VirtualKeyboard } from '../VirtualKeyboard';
 import { AnimationEngine } from '../../engine/animator';
 import { KeyFrameColor } from '../../types/keyboard';
+import { hardwareService } from '../../services/hardware';
 import { Gamepad2, Trophy, Zap, Bomb, Play, Square, RotateCcw } from 'lucide-react';
 
 type GameId = 'switch_reflex' | 'chord_defusal' | 'matrix_snake';
@@ -117,9 +118,10 @@ export const ArcadePanel: React.FC<ArcadePanelProps> = ({ engine }) => {
     const gameEngine = new GameEngine();
     gameEngineRef.current = gameEngine;
 
-    // Subscribe to frame updates
+    // Subscribe to frame updates and stream to both UI and physical keyboard hardware
     frameUnsubRef.current = gameEngine.onFrame((frame) => {
       setArcadeFrame({ ...frame });
+      hardwareService.pushFrame(frame);
     });
 
     const game = meta.factory();
@@ -175,8 +177,8 @@ export const ArcadePanel: React.FC<ArcadePanelProps> = ({ engine }) => {
         </div>
         <div className="preview-keyboard-wrapper">
           <VirtualKeyboard
-            engine={null}
-            effectType={selectedGame || 'arcade'}
+            engine={isPlaying ? null : engine}
+            effectType={isPlaying ? (selectedGame || 'arcade') : 'arcade'}
             currentFrame={isPlaying ? arcadeFrame : undefined}
             isPixelArtMode={false}
             selectedKeyIds={new Set()}

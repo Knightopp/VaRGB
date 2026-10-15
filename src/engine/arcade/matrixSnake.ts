@@ -34,7 +34,7 @@ export class MatrixSnakeGame implements MiniGame {
   private readonly TAIL_COLOR: RGBColor = { r: 0, g: 80, b: 30 };
   private readonly FOOD_COLOR: RGBColor = { r: 255, g: 60, b: 60 };
   private readonly FOOD_GLOW: RGBColor = { r: 255, g: 120, b: 40 };
-  private readonly BG_DIM: RGBColor = { r: 3, g: 6, b: 3 };
+  private readonly BG_DIM: RGBColor = { r: 0, g: 0, b: 0 };
 
   start(engine: GameEngine): void {
     this.engine = engine;

@@ -29,7 +29,7 @@ export class SwitchReflexGame implements MiniGame {
   private readonly TARGET_COLOR: RGBColor = { r: 0, g: 255, b: 120 };
   private readonly MISS_COLOR: RGBColor = { r: 255, g: 40, b: 40 };
   private readonly HIT_COLOR: RGBColor = { r: 255, g: 255, b: 80 };
-  private readonly BG_DIM: RGBColor = { r: 8, g: 4, b: 12 };
+  private readonly BG_DIM: RGBColor = { r: 0, g: 0, b: 0 };
   private readonly LIFE_COLOR: RGBColor = { r: 255, g: 60, b: 80 };
 
   start(engine: GameEngine): void {

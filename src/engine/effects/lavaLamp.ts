@@ -98,7 +98,7 @@ export class LavaLampEffect implements ILightingEffect {
 export const DEFAULT_LAVA_LAMP_PARAMS: LavaLampParams = {
   brightness: 1.0,
   speed: 1.0,
-  backgroundColor: { r: 26, g: 0, b: 51 },   // #1A0033 Deep Purple
+  backgroundColor: { r: 0, g: 0, b: 0 },   // Pure Black
   foregroundColor: { r: 255, g: 51, b: 0 },    // #FF3300 Molten Orange-Red
   blobCount: 4,
 };

@@ -100,7 +100,7 @@ export const DEFAULT_CONTINUOUS_WAVE_PARAMS: ContinuousWaveParams = {
   brightness: 1.0,  // Full 100% LED output
   primaryColor: { r: 0, g: 235, b: 255 },    // Vivid Cyan crest
   secondaryColor: { r: 140, g: 0, b: 255 },  // Deep Electric Violet trough
-  baseColor: { r: 5, g: 0, b: 20 },          // Dark Midnight floor
+  baseColor: { r: 0, g: 0, b: 0 },          // Black floor
   useMulticolor: false,
   palette: [
     { r: 255, g: 0, b: 90 },   // Neon Magenta

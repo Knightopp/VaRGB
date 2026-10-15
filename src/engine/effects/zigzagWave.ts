@@ -131,7 +131,7 @@ export class ZigzagWaveEffect implements ILightingEffect {
     const primary = this.params.primaryColor ?? { r: 0, g: 229, b: 255 };
     const secondary = this.params.secondaryColor ?? { r: 157, g: 0, b: 255 };
     const bgGlow = Boolean(this.params.backgroundGlow);
-    const bgColor = this.params.backgroundColor ?? { r: 0, g: 15, b: 35 };
+    const bgColor = this.params.backgroundColor ?? { r: 0, g: 0, b: 0 };
 
     const head = this.position;
     const dir = this.direction;
@@ -198,8 +198,8 @@ export class ZigzagWaveEffect implements ILightingEffect {
 
       if (brightness > 0.002) {
         frame[key.id] = applyBrightness(keyColor, brightness * masterBrightness);
-      } else if (bgGlow) {
-        frame[key.id] = applyBrightness(bgColor, 0.15 * masterBrightness);
+      } else if (bgGlow || (bgColor.r > 0 || bgColor.g > 0 || bgColor.b > 0)) {
+        frame[key.id] = applyBrightness(bgColor, (bgGlow ? 0.15 : 1.0) * masterBrightness);
       } else {
         frame[key.id] = { r: 0, g: 0, b: 0 };
       }
@@ -219,6 +219,6 @@ export const DEFAULT_ZIGZAG_WAVE_PARAMS: ZigzagWaveParams = {
   secondaryColor: { r: 157, g: 0, b: 255 },  // Electric Violet tail
   rainbowMode: false,
   backgroundGlow: false,
-  backgroundColor: { r: 0, g: 15, b: 35 },   // Deep Navy ambient
+  backgroundColor: { r: 0, g: 0, b: 0 },     // True black background
   reverseStart: false,
 };

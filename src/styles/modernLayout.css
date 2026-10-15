@@ -1122,6 +1122,117 @@
   align-items: center;
 }
 
+/* Universal Background / Base Color Row */
+.background-color-row {
+  align-items: center;
+}
+
+.background-color-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+  max-width: 580px;
+}
+
+.bg-swatch-picker-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bg-swatch-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.bg-swatch-circle:hover {
+  transform: scale(1.15);
+  border-color: #ffffff;
+}
+
+.bg-hex-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #a1a1aa;
+  letter-spacing: 0.04em;
+}
+
+.bg-quick-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bg-preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bg-preset-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.bg-preset-chip.active {
+  background: #27272a;
+  border-color: #8b5cf6;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+}
+
+.bg-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bg-chip-dot.black {
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.bg-chip-dot.navy {
+  background: #000b1a;
+  border: 1px solid rgba(0, 150, 255, 0.4);
+}
+
+.bg-chip-dot.violet {
+  background: #10001a;
+  border: 1px solid rgba(180, 0, 255, 0.4);
+}
+
+.bg-chip-dot.charcoal {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.bg-chip-check {
+  color: #a78bfa;
+  margin-left: 1px;
+}
+
 /* Advanced Settings Accordion */
 .advanced-settings-accordion {
   border-top: 1px solid rgba(255, 255, 255, 0.06);

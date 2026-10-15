@@ -250,6 +250,34 @@ export const ModernLightingWorkspace: React.FC<ModernLightingWorkspaceProps> = (
     onParamsChange(updated);
   };
 
+  // Smart Background / Base Color extraction
+  const rawBackgroundColor: RGBColor =
+    (params as any).backgroundColor ||
+    (params as any).baseColor ||
+    (params as any).idleColor ||
+    (params as any).bgColor ||
+    { r: 0, g: 0, b: 0 };
+
+  const isBackgroundBlack =
+    rawBackgroundColor.r === 0 &&
+    rawBackgroundColor.g === 0 &&
+    rawBackgroundColor.b === 0;
+
+  const handleBackgroundColorChange = (newColor: RGBColor) => {
+    const updated: any = {
+      ...params,
+      backgroundColor: newColor,
+      baseColor: newColor,
+    };
+    if ('idleColor' in params) {
+      updated.idleColor = newColor;
+    }
+    if ('bgColor' in params) {
+      updated.bgColor = newColor;
+    }
+    onParamsChange(updated);
+  };
+
   const handleAddColor = () => {
     const defaultNewColor = { r: 16, g: 185, b: 129 }; // Emerald green
     if (Array.isArray((params as any).palette)) {
@@ -744,6 +772,75 @@ export const ModernLightingWorkspace: React.FC<ModernLightingWorkspaceProps> = (
               {/* Decorative Accent Sparkle */}
               <div className="palette-accent-sparkle" title="RGB Harmonic Spectrum">
                 <Sparkles size={18} />
+              </div>
+            </div>
+          </div>
+
+          {/* Background / Base Color Setting Row */}
+          <div className="setting-row background-color-row">
+            <div className="setting-label-group">
+              <Square size={16} className="setting-icon" />
+              <span className="setting-label">Background / Base</span>
+            </div>
+            <div className="background-color-controls">
+              <div className="bg-swatch-picker-group">
+                <label
+                  className="palette-swatch-circle bg-swatch-circle"
+                  style={{ backgroundColor: rgbToHex(rawBackgroundColor) }}
+                  title={`Background RGB(${rawBackgroundColor.r}, ${rawBackgroundColor.g}, ${rawBackgroundColor.b}) - Click to pick color`}
+                >
+                  <input
+                    type="color"
+                    value={rgbToHex(rawBackgroundColor)}
+                    onChange={(e) => handleBackgroundColorChange(hexToRgb(e.target.value))}
+                    className="swatch-color-input"
+                  />
+                </label>
+                <span className="bg-hex-code">{rgbToHex(rawBackgroundColor).toUpperCase()}</span>
+              </div>
+
+              {/* Quick Preset Buttons with Pure Black Default */}
+              <div className="bg-quick-presets">
+                <button
+                  type="button"
+                  className={`bg-preset-chip ${isBackgroundBlack ? 'active' : ''}`}
+                  onClick={() => handleBackgroundColorChange({ r: 0, g: 0, b: 0 })}
+                  title="Pure Black (0, 0, 0) - Turn background LEDs completely off"
+                >
+                  <span className="bg-chip-dot black" />
+                  <span>Pure Black (Off)</span>
+                  {isBackgroundBlack && <Check size={12} className="bg-chip-check" />}
+                </button>
+
+                <button
+                  type="button"
+                  className={`bg-preset-chip ${rgbToHex(rawBackgroundColor).toLowerCase() === '#000b1a' ? 'active' : ''}`}
+                  onClick={() => handleBackgroundColorChange({ r: 0, g: 11, b: 26 })}
+                  title="Dark Navy tint (#000B1A)"
+                >
+                  <span className="bg-chip-dot navy" />
+                  <span>Dark Navy</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`bg-preset-chip ${rgbToHex(rawBackgroundColor).toLowerCase() === '#10001a' ? 'active' : ''}`}
+                  onClick={() => handleBackgroundColorChange({ r: 16, g: 0, b: 26 })}
+                  title="Dark Violet tint (#10001A)"
+                >
+                  <span className="bg-chip-dot violet" />
+                  <span>Dark Violet</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`bg-preset-chip ${rgbToHex(rawBackgroundColor).toLowerCase() === '#0a0a0a' ? 'active' : ''}`}
+                  onClick={() => handleBackgroundColorChange({ r: 10, g: 10, b: 10 })}
+                  title="Charcoal tint (#0A0A0A)"
+                >
+                  <span className="bg-chip-dot charcoal" />
+                  <span>Charcoal</span>
+                </button>
               </div>
             </div>
           </div>

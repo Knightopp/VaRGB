@@ -8,7 +8,7 @@ export const DEFAULT_FROST_SHATTER_PARAMS: FrostShatterParams = {
   speed: 1.0,
   primaryColor: { r: 255, g: 255, b: 255 },   // Ice fracture flash
   secondaryColor: { r: 0, g: 204, b: 255 },   // Glacier cyan cool-down
-  backgroundColor: { r: 2, g: 11, b: 20 },    // Ambient crystalline frost
+  backgroundColor: { r: 0, g: 0, b: 0 },    // Pure Black base
 };
 
 interface FractureRay {

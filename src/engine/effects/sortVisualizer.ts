@@ -8,7 +8,7 @@ export const DEFAULT_SORT_VISUALIZER_PARAMS: SortVisualizerParams = {
   speed: 1.0,
   primaryColor: { r: 0, g: 255, b: 102 },   // Verification green / sorted
   secondaryColor: { r: 255, g: 255, b: 255 }, // Active compare/swap pointers
-  backgroundColor: { r: 10, g: 20, b: 15 }, // Background
+  backgroundColor: { r: 0, g: 0, b: 0 }, // Black Background
 };
 
 export class SortVisualizerEffect implements ILightingEffect {
