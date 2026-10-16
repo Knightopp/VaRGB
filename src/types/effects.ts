@@ -424,7 +424,10 @@ export interface RaindropsParams {
 
 export interface ScreenAmbilightParams {
   brightness: number;
-  smoothing: number;
+  smoothing: number;    // Lerp factor 0.05-0.8 (default 0.25)
+  blackCutoff?: number; // 0-50 (default 15) threshold for complete LED shutoff (pitch black)
+  gamma?: number;       // 1.0-2.8 (default 2.0) perceptual contrast & deep blacks
+  saturation?: number;  // 0.5-2.5 (default 1.25) color vibrancy boost
 }
 
 export interface TelemetryBarsParams {

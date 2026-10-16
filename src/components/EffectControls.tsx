@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EffectType, AnyEffectParams, SavedPreset } from '../types/effects';
 import { RGBColor } from '../types/keyboard';
 import { EFFECT_REGISTRY } from '../engine/registry';
 import { rgbToHex, hexToRgb } from '../engine/color';
-import { RotateCcw, Save, Compass, SlidersHorizontal, Sun, Zap, Plus, Copy, Trash2, Bookmark } from 'lucide-react';
+import { RotateCcw, Save, Compass, SlidersHorizontal, Sun, Zap, Plus, Copy, Trash2, Bookmark, Monitor, Moon } from 'lucide-react';
 import { MusicPulseSettings } from './MusicPulseSettings';
+import { screenCaptureService } from '../engine/effects/screenAmbilight';
 
 interface EffectControlsProps {
   currentType: EffectType;
@@ -43,6 +44,19 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
 }) => {
   const [presetNameInput, setPresetNameInput] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(() => screenCaptureService.isCapturing());
+  const [trackLabel, setTrackLabel] = useState(() => screenCaptureService.getTrackLabel());
+
+  useEffect(() => {
+    if (currentType !== 'screen_ambilight') return;
+    setIsCapturing(screenCaptureService.isCapturing());
+    setTrackLabel(screenCaptureService.getTrackLabel());
+    const unsub = screenCaptureService.subscribe((active) => {
+      setIsCapturing(active);
+      setTrackLabel(screenCaptureService.getTrackLabel());
+    });
+    return unsub;
+  }, [currentType]);
 
   const updateParam = (key: string, value: any) => {
     onParamsChange({
@@ -2026,6 +2040,49 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
         {/* Screen Ambilight Controls */}
         {currentType === 'screen_ambilight' && (
           <div className="effect-specific-controls">
+            {/* Screen Sync Status & Action Bar */}
+            <div className="screen-sync-banner">
+              <div className="screen-sync-info">
+                <Monitor size={18} className="screen-sync-icon" />
+                <div className="screen-sync-details">
+                  <div className="screen-sync-status-row">
+                    <span className={`sync-dot ${isCapturing ? 'active' : 'idle'}`} />
+                    <span className="sync-title">
+                      {isCapturing ? `Display Sync Active: ${trackLabel || 'Screen'}` : 'Screen Capture Inactive'}
+                    </span>
+                  </div>
+                  <div className="screen-sync-subtext">
+                    {isCapturing
+                      ? 'Keyboard RGB keys are dynamically sampled from your display with true physical 2D coordinates.'
+                      : 'Click below to select a screen, window, or monitor to synchronize.'}
+                  </div>
+                </div>
+              </div>
+              <div className="screen-sync-actions">
+                <button
+                  type="button"
+                  className={`screen-capture-btn ${isCapturing ? 'active' : 'primary'}`}
+                  onClick={async () => {
+                    await screenCaptureService.startCapture();
+                  }}
+                >
+                  <Monitor size={13} />
+                  <span>{isCapturing ? 'Change Screen' : 'Select Screen'}</span>
+                </button>
+                {isCapturing && (
+                  <button
+                    type="button"
+                    className="screen-capture-btn stop"
+                    onClick={() => {
+                      screenCaptureService.stopCapture();
+                    }}
+                  >
+                    <span>Stop</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="slider-row">
               <div className="control-field">
                 <span className="field-title"><Sun size={12} /> Brightness: {Math.round(((params as any).brightness ?? 1.0) * 100)}%</span>
@@ -2043,15 +2100,66 @@ export const EffectControls: React.FC<EffectControlsProps> = ({
                 <input
                   type="range"
                   min="0.05"
-                  max="0.60"
+                  max="0.80"
                   step="0.05"
                   value={(params as any).smoothing ?? 0.25}
                   onChange={(e) => updateParam('smoothing', parseFloat(e.target.value))}
                 />
               </div>
             </div>
-            <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-              Uses screen capture downsampled to 14&times;5 matrix. If permission is denied or pending, falls back to ambient spectrum demo.
+
+            <div className="slider-row" style={{ marginTop: '12px' }}>
+              <div className="control-field">
+                <span className="field-title">
+                  <Moon size={12} /> Pitch Black Cutoff: {((params as any).blackCutoff ?? 15)}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="45"
+                  step="1"
+                  value={(params as any).blackCutoff ?? 15}
+                  onChange={(e) => updateParam('blackCutoff', parseInt(e.target.value, 10))}
+                />
+                <div className="field-micro-desc">
+                  Completely shuts LEDs OFF in dark scenes, letterboxes, or black backgrounds.
+                </div>
+              </div>
+              <div className="control-field">
+                <span className="field-title">
+                  Contrast & Gamma: {((params as any).gamma ?? 2.0).toFixed(1)}
+                </span>
+                <input
+                  type="range"
+                  min="1.0"
+                  max="2.6"
+                  step="0.1"
+                  value={(params as any).gamma ?? 2.0}
+                  onChange={(e) => updateParam('gamma', parseFloat(e.target.value))}
+                />
+                <div className="field-micro-desc">
+                  Perceptual curve for deep shadow contrast matching your monitor.
+                </div>
+              </div>
+            </div>
+
+            <div className="slider-row" style={{ marginTop: '12px' }}>
+              <div className="control-field">
+                <span className="field-title">
+                  Color Vibrancy (Saturation): {Math.round(((params as any).saturation ?? 1.25) * 100)}%
+                </span>
+                <input
+                  type="range"
+                  min="0.80"
+                  max="2.20"
+                  step="0.05"
+                  value={(params as any).saturation ?? 1.25}
+                  onChange={(e) => updateParam('saturation', parseFloat(e.target.value))}
+                />
+                <div className="field-micro-desc">
+                  Compensates for keycap diffuser light absorption for punchy colors.
+                </div>
+              </div>
             </div>
           </div>
         )}

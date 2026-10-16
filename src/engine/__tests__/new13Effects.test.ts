@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { K630_LAYOUT } from '../layout';
 import { createEffectInstance, EFFECT_REGISTRY } from '../registry';
 import { AnimationContext, EffectType } from '../../types/effects';
@@ -10,7 +10,7 @@ import { RadarSweepEffect } from '../effects/radarSweep';
 import { VortexPinwheelEffect } from '../effects/vortexPinwheel';
 import { LavaLampEffect } from '../effects/lavaLamp';
 import { RaindropsEffect } from '../effects/raindrops';
-import { ScreenAmbilightEffect } from '../effects/screenAmbilight';
+import { ScreenAmbilightEffect, screenCaptureService } from '../effects/screenAmbilight';
 import { TelemetryBarsEffect } from '../effects/telemetryBars';
 import { SpectrumEQEffect } from '../effects/spectrumEQ';
 import { CustomZonesEffect } from '../effects/customZones';
@@ -171,6 +171,85 @@ describe('13 New RGB Lighting Effects for Redragon K630', () => {
       const ambilight = new ScreenAmbilightEffect();
       const frame = ambilight.update(mockContext);
       expect(Object.keys(frame).length).toBe(61);
+    });
+
+    it('Screen Ambilight produces pitch black (0, 0, 0) when screen is black or below blackCutoff', () => {
+      // Mock sampleImageData returning black data with minor compression noise (e.g. 8, 8, 8)
+      const mockData = new Uint8ClampedArray(60 * 20 * 4);
+      for (let i = 0; i < mockData.length; i += 4) {
+        mockData[i] = 8;     // R
+        mockData[i + 1] = 8; // G
+        mockData[i + 2] = 8; // B
+        mockData[i + 3] = 255;
+      }
+      const sampleSpy = vi.spyOn(screenCaptureService, 'sampleImageData').mockReturnValue({
+        data: mockData,
+        width: 60,
+        height: 20,
+      } as any);
+
+      const ambilight = new ScreenAmbilightEffect({
+        brightness: 1.0,
+        smoothing: 0.5,
+        blackCutoff: 15,
+        gamma: 2.0,
+        saturation: 1.25,
+      });
+
+      const frame = ambilight.update(mockContext);
+      expect(Object.keys(frame).length).toBe(61);
+      // Because noise (8,8,8) is <= blackCutoff (15), every key must be strictly pitch black (LEDs off)
+      for (const keyId of Object.keys(frame)) {
+        expect(frame[keyId]).toEqual({ r: 0, g: 0, b: 0 });
+      }
+
+      sampleSpy.mockRestore();
+    });
+
+    it('Screen Ambilight accurately passes vibrant colors above threshold', () => {
+      // Mock a bright red top-left screen
+      const mockData = new Uint8ClampedArray(60 * 20 * 4);
+      for (let y = 0; y < 20; y++) {
+        for (let x = 0; x < 60; x++) {
+          const idx = (y * 60 + x) * 4;
+          if (x < 15 && y < 5) {
+            // Bright red in top left
+            mockData[idx] = 240;
+            mockData[idx + 1] = 20;
+            mockData[idx + 2] = 20;
+          } else {
+            // Pitch black elsewhere
+            mockData[idx] = 0;
+            mockData[idx + 1] = 0;
+            mockData[idx + 2] = 0;
+          }
+          mockData[idx + 3] = 255;
+        }
+      }
+      const sampleSpy = vi.spyOn(screenCaptureService, 'sampleImageData').mockReturnValue({
+        data: mockData,
+        width: 60,
+        height: 20,
+      } as any);
+
+      const ambilight = new ScreenAmbilightEffect({
+        brightness: 1.0,
+        smoothing: 1.0,
+        blackCutoff: 15,
+        gamma: 2.0,
+        saturation: 1.0,
+      });
+
+      const frame = ambilight.update(mockContext);
+      // Top-left key 'esc' should be vivid red
+      expect(frame['esc'].r).toBeGreaterThan(150);
+      expect(frame['esc'].g).toBe(0);
+      expect(frame['esc'].b).toBe(0);
+
+      // Bottom-right key 'ctrl_r' must be pitch black
+      expect(frame['ctrl_r']).toEqual({ r: 0, g: 0, b: 0 });
+
+      sampleSpy.mockRestore();
     });
 
     it('Telemetry Bars visualizes simulated or system load across rows', () => {
