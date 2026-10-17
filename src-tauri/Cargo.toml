@@ -1,17 +1,21 @@
 [package]
-name = "tauri-app"
-version = "0.3.3"
-description = "A Tauri App"
+name = "vargb"
+version = "0.3.4"
+description = "VaRGB - RGB Lighting Studio"
 authors = ["you"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "VaRGB"
+path = "src/main.rs"
+
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "tauri_app_lib"
+name = "vargb_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

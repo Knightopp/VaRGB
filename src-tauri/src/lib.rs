@@ -55,7 +55,7 @@ fn stop_audio_capture(state: State<audio::AudioService>) {
     state.stop();
 }
 
-const APP_REGISTRY_NAME: &str = "VaRGB - vazorism productions";
+const APP_REGISTRY_NAME: &str = "VaRGB";
 
 #[cfg(windows)]
 fn configure_startup_launch(enable: bool) -> Result<(), String> {
@@ -67,7 +67,7 @@ fn configure_startup_launch(enable: bool) -> Result<(), String> {
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
-    let stale_names = ["k630-studio", "tauri-app", "VaRGB", "vazorism productions"];
+    let stale_names = ["k630-studio", "tauri-app", "VaRGB - vazorism productions", "vazorism productions"];
 
     // 1. Clean up any stale or unquoted entries in HKLM if present
     if let Ok(hklm_run) = LOCAL_MACHINE.open(run_subkey) {
@@ -182,6 +182,64 @@ fn configure_startup_launch(enable: bool) -> Result<(), String> {
 fn configure_startup_launch(_enable: bool) -> Result<(), String> {
     Ok(())
 }
+
+#[cfg(windows)]
+fn ensure_start_menu_shortcut() {
+    use std::env::current_exe;
+    use std::process::Command;
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+    if let (Ok(appdata), Ok(exe_path)) = (std::env::var("APPDATA"), current_exe()) {
+        let programs_dir = std::path::PathBuf::from(&appdata)
+            .join("Microsoft")
+            .join("Windows")
+            .join("Start Menu")
+            .join("Programs");
+
+        if programs_dir.exists() {
+            // Remove old or misleading shortcuts
+            let stale_shortcuts = [
+                "VaRGB - vazorism productions.lnk",
+                "tauri-app.lnk",
+            ];
+            for stale in &stale_shortcuts {
+                let stale_path = programs_dir.join(stale);
+                if stale_path.exists() {
+                    let _ = std::fs::remove_file(stale_path);
+                }
+            }
+
+            let lnk_path = programs_dir.join("VaRGB.lnk");
+            let exe_str = exe_path.to_string_lossy();
+            let parent_dir = exe_path.parent().map(|p| p.to_string_lossy()).unwrap_or_default();
+
+            let ps_script = format!(
+                "$ws = New-Object -ComObject WScript.Shell; \
+                 $s = $ws.CreateShortcut('{}'); \
+                 $s.TargetPath = '{}'; \
+                 $s.Description = 'VaRGB - RGB Lighting Studio'; \
+                 $s.WorkingDirectory = '{}'; \
+                 $s.IconLocation = '{},0'; \
+                 $s.Save()",
+                lnk_path.to_string_lossy().replace('\'', "''"),
+                exe_str.replace('\'', "''"),
+                parent_dir.replace('\'', "''"),
+                exe_str.replace('\'', "''")
+            );
+
+            let _ = Command::new("powershell")
+                .args(&["-NoProfile", "-NonInteractive", "-Command", &ps_script])
+                .creation_flags(CREATE_NO_WINDOW)
+                .status();
+
+            eprintln!("[VaRGB] Verified Start Menu search shortcut at {}", lnk_path.display());
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn ensure_start_menu_shortcut() {}
 
 #[tauri::command]
 fn enable_startup_launch() -> Result<(), String> {
@@ -386,6 +444,8 @@ pub fn run() {
             {
                 // Always ensure maximum priority autostart is registered on boot
                 let _ = configure_startup_launch(true);
+                // Ensure Start Menu search shortcut exists and is up to date
+                ensure_start_menu_shortcut();
             }
 
             // System Tray Setup
@@ -434,16 +494,18 @@ pub fn run() {
 
             keyboard_hook::hook::start(app.handle().clone());
 
-            // App always starts inside system tray as requested
-            let should_show = std::env::args().any(|arg| arg == "--show" || arg == "-s" || arg == "--window");
+            // App starts inside system tray ONLY if --minimized, -m, or --tray is passed (e.g. at boot autostart).
+            // When opened directly by the user or from Windows Search, always display and focus the window.
+            let is_minimized_boot = std::env::args().any(|arg| arg == "--minimized" || arg == "-m" || arg == "--tray");
             if let Some(window) = app.get_webview_window("main") {
-                if should_show {
+                if is_minimized_boot {
+                    let _ = window.hide();
+                    eprintln!("[VaRGB] Started minimized inside system tray.");
+                } else {
                     let _ = window.show();
                     let _ = window.unminimize();
                     let _ = window.set_focus();
-                } else {
-                    let _ = window.hide();
-                    eprintln!("[VaRGB] Started inside system tray.");
+                    eprintln!("[VaRGB] Main window shown.");
                 }
             }
 

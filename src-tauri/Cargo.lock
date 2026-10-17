@@ -3468,22 +3468,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-app"
-version = "0.3.3"
-dependencies = [
- "hidapi",
- "rustfft",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "wasapi",
- "windows-registry",
-]
-
-[[package]]
 name = "tauri-build"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4120,6 +4104,22 @@ dependencies = [
  "js-sys",
  "serde_core",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "vargb"
+version = "0.3.4"
+dependencies = [
+ "hidapi",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "wasapi",
+ "windows-registry",
 ]
 
 [[package]]
