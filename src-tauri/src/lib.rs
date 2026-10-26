@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, State, WebviewUrl, WebviewWindowBuilder,
+    Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder,
 };
 
 static IS_QUITTING: AtomicBool = AtomicBool::new(false);
@@ -326,6 +326,7 @@ fn open_or_recreate_window(app: &tauri::AppHandle) {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
+        let _ = window.emit("window-visibility-change", true);
         eprintln!("[VaRGB] Focusing existing main window.");
     } else {
         eprintln!("[VaRGB] Re-creating WebView2 window from tray...");
@@ -339,6 +340,7 @@ fn open_or_recreate_window(app: &tauri::AppHandle) {
                 let _ = window.show();
                 let _ = window.unminimize();
                 let _ = window.set_focus();
+                let _ = window.emit("window-visibility-change", true);
                 eprintln!("[VaRGB] Successfully rebuilt WebView2 window.");
             }
             Err(e) => {
@@ -445,6 +447,7 @@ pub fn run() {
 
                 if is_minimized_boot {
                     if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.emit("window-visibility-change", false);
                         let _ = window.hide();
                     }
                     eprintln!("[VaRGB] Started minimized inside system tray.");
@@ -453,6 +456,7 @@ pub fn run() {
                         let _ = window.show();
                         let _ = window.unminimize();
                         let _ = window.set_focus();
+                        let _ = window.emit("window-visibility-change", true);
                         eprintln!("[VaRGB] Main window displayed.");
                     }
                 }
@@ -464,6 +468,7 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 // Intercept close: hide to tray so active effect continues seamlessly with 0 interruption
                 api.prevent_close();
+                let _ = window.emit("window-visibility-change", false);
                 let _ = window.hide();
                 eprintln!("[VaRGB] Window hidden to system tray; chosen lighting effect continues.");
             }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Sidebar, NavTab } from './components/Sidebar';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { PixelArtEditor } from './components/PixelArtEditor';
@@ -198,8 +199,48 @@ export const App: React.FC = () => {
       }
     })();
 
+    // Synchronize window visibility with AnimationEngine
+    let unlistenVisibility: (() => void) | undefined;
+    let unlistenResize: (() => void) | undefined;
+    let unlistenFocus: (() => void) | undefined;
+
+    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+      try {
+        const appWindow = getCurrentWindow();
+        void appWindow.listen<boolean>('window-visibility-change', ({ payload: visible }) => {
+          engine.setWindowVisibility(visible);
+        }).then((unsub) => {
+          unlistenVisibility = unsub;
+        });
+
+        void appWindow.onResized(async () => {
+          try {
+            const isMin = await appWindow.isMinimized();
+            engine.setWindowVisibility(!isMin);
+          } catch {
+            // ignore
+          }
+        }).then((unsub) => {
+          unlistenResize = unsub;
+        });
+
+        void appWindow.onFocusChanged(({ payload: focused }) => {
+          if (focused) {
+            engine.setWindowVisibility(true);
+          }
+        }).then((unsub) => {
+          unlistenFocus = unsub;
+        });
+      } catch (err) {
+        console.warn('Failed to bind Tauri window visibility events:', err);
+      }
+    }
+
     return () => {
       window.clearInterval(devicePoll);
+      unlistenVisibility?.();
+      unlistenResize?.();
+      unlistenFocus?.();
       engine.stop();
       hardwareService.setStatusListener(null);
       hardwareService.setHardwareEnabled(false);

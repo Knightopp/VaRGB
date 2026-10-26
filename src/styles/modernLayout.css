@@ -36,9 +36,8 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 24px 14px 20px;
-  background: rgba(10, 10, 12, 0.85);
+  background: rgba(10, 10, 13, 0.98);
   border-right: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(30px);
   z-index: 10;
   position: relative;
 }
@@ -198,9 +197,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(12, 12, 15, 0.75);
+  background: rgba(12, 12, 16, 0.98);
   border-right: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(25px);
   z-index: 9;
   position: relative;
 }

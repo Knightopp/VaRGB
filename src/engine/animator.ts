@@ -23,18 +23,34 @@ export class AnimationEngine {
   private inputUnsubscribe: (() => void) | null = null;
   private backgroundTimerId: number | null = null;
   private lastFrame: KeyFrameColor = {};
+  private isWindowVisible: boolean = true;
 
   constructor(private keys: KeyDefinition[] = K630_LAYOUT) {
     this.setupKeyEventListener();
     this.setupVisibilityListener();
   }
 
+  public setWindowVisibility(visible: boolean): void {
+    if (this.isWindowVisible === visible) return;
+    this.isWindowVisible = visible;
+    if (!this.isRunning || this.isPaused) return;
+
+    if (!visible) {
+      this.switchToBackground();
+    } else if (typeof document === 'undefined' || !document.hidden) {
+      if (this.listeners.size > 0) {
+        this.switchToForeground();
+      }
+    }
+  }
+
   private handleVisibilityChange = (): void => {
     if (!this.isRunning || this.isPaused) return;
 
-    if (typeof document !== 'undefined' && document.hidden) {
+    const isHidden = !this.isWindowVisible || (typeof document !== 'undefined' && document.hidden);
+    if (isHidden) {
       this.switchToBackground();
-    } else {
+    } else if (this.listeners.size > 0) {
       this.switchToForeground();
     }
   };
@@ -42,7 +58,7 @@ export class AnimationEngine {
   private handleWindowFocus = (): void => {
     if (!this.isRunning || this.isPaused) return;
     this.lastTimestamp = performance.now();
-    if (typeof document !== 'undefined' && !document.hidden) {
+    if (this.isWindowVisible && (typeof document === 'undefined' || !document.hidden) && this.listeners.size > 0) {
       this.switchToForeground();
     }
   };
@@ -101,7 +117,15 @@ export class AnimationEngine {
 
   public subscribe(listener: FrameListener): () => void {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    if (this.isRunning && !this.isPaused && this.isWindowVisible && (typeof document === 'undefined' || !document.hidden)) {
+      this.switchToForeground();
+    }
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0 && this.isRunning && !this.isPaused) {
+        this.switchToBackground();
+      }
+    };
   }
 
   public setHardwareStreamer(streamer: ((frame: KeyFrameColor) => void) | null): void {
@@ -120,7 +144,8 @@ export class AnimationEngine {
     this.lastTimestamp = performance.now();
     this.accumulatedTime = 0;
 
-    if (typeof document !== 'undefined' && document.hidden) {
+    const isHidden = !this.isWindowVisible || (typeof document !== 'undefined' && document.hidden) || this.listeners.size === 0;
+    if (isHidden) {
       this.switchToBackground();
     } else {
       this.switchToForeground();
@@ -168,6 +193,13 @@ export class AnimationEngine {
 
   private backgroundTick = (): void => {
     if (!this.isRunning || this.isPaused) return;
+
+    // If window is visible, document is not hidden, and there are active UI listeners, return to foreground RAF!
+    if (this.isWindowVisible && (typeof document === 'undefined' || !document.hidden) && this.listeners.size > 0) {
+      this.switchToForeground();
+      return;
+    }
+
     const now = performance.now();
     const rawDt = (now - this.lastTimestamp) / 1000;
     const dt = Number.isFinite(rawDt) ? Math.min(0.1, Math.max(0.001, rawDt)) : 0.033;
@@ -184,7 +216,7 @@ export class AnimationEngine {
 
       const frame = this.effect.update(ctx);
 
-      // In background, stream directly to USB hardware controller without touching DOM
+      // In background, stream directly to USB hardware controller without touching DOM or GPU
       if (this.hardwareListener && now - this.lastHardwarePushTime >= this.hardwareIntervalMs) {
         this.lastHardwarePushTime = now;
         this.hardwareListener(frame);
@@ -260,8 +292,8 @@ export class AnimationEngine {
 
     if (!this.isRunning) return;
 
-    // If window became hidden, switch cleanly to background loop and stop RAF
-    if (typeof document !== 'undefined' && document.hidden) {
+    // If window became hidden or has no UI listeners, switch cleanly to background loop and stop RAF
+    if (!this.isWindowVisible || (typeof document !== 'undefined' && document.hidden) || this.listeners.size === 0) {
       this.switchToBackground();
       return;
     }
@@ -293,9 +325,11 @@ export class AnimationEngine {
       this.lastTimestamp = timestamp;
     }
 
-    // Schedule next frame ONLY if running, not paused, and window is visible
-    if (this.isRunning && !this.isPaused) {
+    // Schedule next frame ONLY if running, not paused, and window is visible with subscribers
+    if (this.isRunning && !this.isPaused && this.isWindowVisible && this.listeners.size > 0) {
       this.animFrameId = requestAnimationFrame(this.tick);
+    } else if (this.isRunning && !this.isPaused) {
+      this.switchToBackground();
     }
   };
 
@@ -304,6 +338,7 @@ export class AnimationEngine {
   }
 
   private notifySubscribers(frame: KeyFrameColor): void {
+    if (!this.isWindowVisible || (typeof document !== 'undefined' && document.hidden)) return;
     for (const listener of this.listeners) {
       listener(frame);
     }

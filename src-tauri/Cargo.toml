@@ -1,6 +1,6 @@
 [package]
 name = "vargb"
-version = "0.3.6"
+version = "0.3.7"
 description = "VaRGB - RGB Lighting Studio"
 authors = ["you"]
 edition = "2024"

@@ -162,6 +162,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
   const litKeysRef = useRef<Set<string>>(new Set());
   const keyPartsRef = useRef<Record<string, KeySubParts>>({});
   const lastKeyColorRef = useRef<Record<string, RGBColor>>({});
+  const lastDomRenderTimeRef = useRef<number>(0);
 
   const applyKeyColorToElement = useCallback((
     parts: KeySubParts | undefined,
@@ -170,10 +171,10 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
   ) => {
     if (!parts) return;
 
-    // Fast-path: if color is identical to previous frame, skip all DOM style updates!
+    // Fast-path: if color delta is imperceptible (< 2), skip all DOM style updates!
     const prev = lastKeyColorRef.current[keyId];
     if (prev) {
-      if (color && prev.r === color.r && prev.g === color.g && prev.b === color.b) {
+      if (color && Math.abs(prev.r - color.r) < 2 && Math.abs(prev.g - color.g) < 2 && Math.abs(prev.b - color.b) < 2) {
         return;
       }
       if (!color && prev.r === 0 && prev.g === 0 && prev.b === 0) {
@@ -190,7 +191,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     const g = color?.g ?? 0;
     const b = color?.b ?? 0;
 
-    // 1. Physical switch LED underglow radiating into gaps between keycaps
+    // 1. Physical switch LED underglow (GPU-optimized single pass shadow + clean color)
     const glow = parts.glow;
     if (glow) {
       if (isLit && activeGapLighting !== 'off' && activeTheme !== 'classic') {
@@ -198,13 +199,11 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
         const hotR = Math.min(255, Math.round(r * 0.4 + 140));
         const hotG = Math.min(255, Math.round(g * 0.4 + 140));
         const hotB = Math.min(255, Math.round(b * 0.4 + 140));
-        glow.style.background = `radial-gradient(ellipse at 50% 15%, rgba(${hotR}, ${hotG}, ${hotB}, 1) 0%, rgba(${r}, ${g}, ${b}, ${glowAlpha}) 35%, rgba(${r}, ${g}, ${b}, ${glowAlpha * 0.55}) 60%, rgba(${r}, ${g}, ${b}, 0) 85%)`;
-        glow.style.boxShadow = activeGapLighting === 'subtle'
-          ? `0 0 6px rgba(${r}, ${g}, ${b}, 0.35)`
-          : `0 -2px 5px rgba(${r}, ${g}, ${b}, 0.9), 0 2px 4px rgba(${r}, ${g}, ${b}, 0.5), 0 0 6px rgba(${r}, ${g}, ${b}, 0.65)`;
+        glow.style.backgroundColor = `rgba(${hotR}, ${hotG}, ${hotB}, ${glowAlpha * 0.85})`;
+        glow.style.boxShadow = `0 0 ${activeGapLighting === 'subtle' ? 6 : 9}px rgba(${r}, ${g}, ${b}, ${glowAlpha})`;
         glow.style.opacity = '1';
       } else {
-        glow.style.background = 'none';
+        glow.style.backgroundColor = 'transparent';
         glow.style.boxShadow = 'none';
         glow.style.opacity = '0';
       }
@@ -225,7 +224,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
       } else if (activeTheme === 'pudding') {
         if (isLit) {
           body.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
-          body.style.boxShadow = `0 3px 0 #070709, 0 0 12px rgba(${r}, ${g}, ${b}, 0.65)`;
+          body.style.boxShadow = `0 3px 0 #070709, 0 0 10px rgba(${r}, ${g}, ${b}, 0.65)`;
           body.style.background = `linear-gradient(180deg, #18191c 40%, rgba(${r}, ${g}, ${b}, 0.8) 100%)`;
         } else {
           body.style.borderColor = 'rgba(255, 255, 255, 0.08)';
@@ -233,18 +232,17 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
           body.style.background = 'linear-gradient(180deg, #18191c 50%, #101114 100%)';
         }
       } else {
+        // Default mechanical mode: switch glow provides the ambient lighting, avoid expensive per-frame body shadow churn
         body.style.background = '';
         if (isLit) {
           body.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-          body.style.boxShadow = `0 3px 0 #070709, 0 4px 6px rgba(0, 0, 0, 0.85), 0 0 4px rgba(${r}, ${g}, ${b}, 0.35)`;
         } else {
-          body.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-          body.style.boxShadow = '0 3px 0 #070709, 0 4px 6px rgba(0, 0, 0, 0.85)';
+          body.style.borderColor = 'rgba(255, 255, 255, 0.05)';
         }
       }
     }
 
-    // 3. Realistic double-shot shine-through legend illumination
+    // 3. Realistic double-shot shine-through legend illumination (single crisp glow)
     const legend = parts.legend;
     if (legend) {
       if (isLit) {
@@ -252,7 +250,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
         const hotG = Math.min(255, Math.round(g * 0.45 + 155));
         const hotB = Math.min(255, Math.round(b * 0.45 + 155));
         legend.style.color = `rgb(${hotR}, ${hotG}, ${hotB})`;
-        legend.style.textShadow = `0 0 2px rgba(255, 255, 255, 0.95), 0 0 6px rgba(${r}, ${g}, ${b}, 1), 0 0 14px rgba(${r}, ${g}, ${b}, 0.8)`;
+        legend.style.textShadow = `0 0 6px rgba(${r}, ${g}, ${b}, 0.9)`;
         legend.style.opacity = '1';
       } else {
         legend.style.color = 'rgba(255, 255, 255, 0.22)';
@@ -261,18 +259,11 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
       }
     }
 
-    // 4. Keycap top dish with specular rim highlight from switch LED
-    const top = parts.top;
-    if (top) {
-      if (isLit && activeTheme === 'mechanical') {
-        const rimR = Math.min(255, Math.round(r * 0.5 + 140));
-        const rimG = Math.min(255, Math.round(g * 0.5 + 140));
-        const rimB = Math.min(255, Math.round(b * 0.5 + 140));
-        top.style.boxShadow = `inset 0 1.5px 1px rgba(${rimR}, ${rimG}, ${rimB}, 0.45), inset 0 -1px 2px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5)`;
-        top.style.backgroundColor = isPixelArtMode ? `rgba(${r}, ${g}, ${b}, 0.35)` : '';
-      } else {
-        top.style.boxShadow = 'inset 0 1px 1px rgba(255, 255, 255, 0.12), inset 0 -1px 2px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.5)';
-        top.style.backgroundColor = isPixelArtMode ? 'linear-gradient(180deg, #22242a 0%, #15161a 100%)' : '';
+    // 4. Pixel art mode top-dish color fill
+    if (isPixelArtMode) {
+      const top = parts.top;
+      if (top) {
+        top.style.backgroundColor = isLit ? `rgba(${r}, ${g}, ${b}, 0.35)` : 'linear-gradient(180deg, #22242a 0%, #15161a 100%)';
       }
     }
 
@@ -285,7 +276,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
           const hotG = Math.min(255, Math.round(g * 0.45 + 155));
           const hotB = Math.min(255, Math.round(b * 0.45 + 155));
           slit.style.backgroundColor = `rgb(${hotR}, ${hotG}, ${hotB})`;
-          slit.style.boxShadow = `0 0 4px rgba(255, 255, 255, 0.95), 0 0 10px rgba(${r}, ${g}, ${b}, 1)`;
+          slit.style.boxShadow = `0 0 6px rgba(${r}, ${g}, ${b}, 1)`;
           slit.style.opacity = '1';
         } else {
           slit.style.backgroundColor = 'rgba(255, 255, 255, 0.22)';
@@ -296,8 +287,15 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = React.memo(({
     }
   }, [activeTheme, activeGapLighting, isPixelArtMode]);
 
-  // 60 FPS direct DOM updates with zero-DOM-query child elements
+  // Direct DOM updates capped at 30 FPS with zero DOM queries
   const updateColors = useCallback((frame: KeyFrameColor) => {
+    const now = performance.now();
+    // 30 FPS cap (~32ms) prevents GPU thrashing on 144Hz/240Hz gaming monitors
+    if (now - lastDomRenderTimeRef.current < 30) {
+      return;
+    }
+    lastDomRenderTimeRef.current = now;
+
     lastFrameRef.current = frame;
     const currentLitKeys = new Set<string>();
 
