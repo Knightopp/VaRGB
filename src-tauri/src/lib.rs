@@ -1,28 +1,33 @@
 mod audio;
+pub mod engine;
 mod k630;
 mod keyboard_hook;
 
 use hidapi::HidDevice;
 use k630::{
-    DeviceManager, DeviceStatus, K630_KEY_IDS, K630_LED_INDICES, RGB_PAYLOAD_LEN, build_rgb_payload,
+    build_rgb_payload, DeviceManager, DeviceStatus, K630_KEY_IDS, K630_LED_INDICES, RGB_PAYLOAD_LEN,
 };
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, State,
+    Manager, State, WebviewUrl, WebviewWindowBuilder,
 };
 
-struct ActiveDevice {
-    device: HidDevice,
-    initialized: bool,
+static IS_QUITTING: AtomicBool = AtomicBool::new(false);
+
+pub struct ActiveDevice {
+    pub device: HidDevice,
+    pub initialized: bool,
 }
 
-struct AppState {
-    manager: DeviceManager,
-    active_device: Mutex<Option<ActiveDevice>>,
+pub struct AppState {
+    pub manager: Arc<DeviceManager>,
+    pub active_device: Arc<Mutex<Option<ActiveDevice>>>,
+    pub engine: Arc<engine::NativeEngine>,
 }
 
 #[tauri::command]
@@ -60,16 +65,12 @@ const APP_REGISTRY_NAME: &str = "VaRGB";
 #[cfg(windows)]
 fn configure_startup_launch(enable: bool) -> Result<(), String> {
     use std::env::current_exe;
-    use std::process::Command;
-    use std::os::windows::process::CommandExt;
     use windows_registry::{CURRENT_USER, LOCAL_MACHINE};
-
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let run_subkey = r"Software\Microsoft\Windows\CurrentVersion\Run";
     let stale_names = ["k630-studio", "tauri-app", "VaRGB - vazorism productions", "vazorism productions"];
 
-    // 1. Clean up any stale or unquoted entries in HKLM if present
+    // Clean up any stale or unquoted entries in HKLM if present
     if let Ok(hklm_run) = LOCAL_MACHINE.open(run_subkey) {
         let _ = hklm_run.remove_value(APP_REGISTRY_NAME);
         for stale in &stale_names {
@@ -88,90 +89,15 @@ fn configure_startup_launch(enable: bool) -> Result<(), String> {
     if enable {
         let exe_path = current_exe().map_err(|e| format!("Failed to get current executable path: {e}"))?;
         let exe_str = exe_path.to_str().ok_or("Invalid exe path unicode")?;
-        // Always enclose in quotes and pass --minimized so Windows startup launches quietly into the tray
+        // Standard, clean HKCU Run entry (fully trusted by Windows Defender)
         let quoted_cmd = format!("\"{}\" --minimized", exe_str);
-
-        // A. Primary: HKCU Run entry
         hkcu_run
             .set_string(APP_REGISTRY_NAME, &quoted_cmd)
             .map_err(|e| format!("Failed to write HKCU Run value: {e}"))?;
 
-        // B. Disable Explorer's artificial 10-second startup delay (StartupDelayInMSec = 0)
-        let serialize_subkey = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize";
-        if let Ok(serialize_key) = CURRENT_USER.create(serialize_subkey) {
-            let _ = serialize_key.set_u32("StartupDelayInMSec", 0);
-        }
-
-        // C. Fast-Track: Windows Task Scheduler "onlogon" (starts immediately at login without Explorer queue delay)
-        let _ = Command::new("schtasks")
-            .args(&[
-                "/create",
-                "/tn", "VaRGB_FastBoot",
-                "/tr", &quoted_cmd,
-                "/sc", "onlogon",
-                "/rl", "highest",
-                "/f"
-            ])
-            .creation_flags(CREATE_NO_WINDOW)
-            .status()
-            .or_else(|_| {
-                // If highest privilege fails (e.g. non-admin user), try standard privilege
-                Command::new("schtasks")
-                    .args(&[
-                        "/create",
-                        "/tn", "VaRGB_FastBoot",
-                        "/tr", &quoted_cmd,
-                        "/sc", "onlogon",
-                        "/f"
-                    ])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .status()
-            });
-
-        // D. Shell Startup folder link (shell:startup)
-        if let Ok(appdata) = std::env::var("APPDATA") {
-            let startup_dir = std::path::PathBuf::from(appdata)
-                .join("Microsoft")
-                .join("Windows")
-                .join("Start Menu")
-                .join("Programs")
-                .join("Startup");
-            if startup_dir.exists() {
-                let lnk_path = startup_dir.join("VaRGB.lnk");
-                let ps_script = format!(
-                    "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{}'); $s.TargetPath = '{}'; $s.Arguments = '--minimized'; $s.Save()",
-                    lnk_path.to_string_lossy().replace('\'', "''"),
-                    exe_str.replace('\'', "''")
-                );
-                let _ = Command::new("powershell")
-                    .args(&["-NoProfile", "-NonInteractive", "-Command", &ps_script])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .status();
-            }
-        }
-
-        eprintln!("[VaRGB] Instant Priority Boot Launch registered (Run + StartupFolder + Serialize Delay 0ms)");
+        eprintln!("[VaRGB] Startup launch registered in HKCU Run");
     } else {
         let _ = hkcu_run.remove_value(APP_REGISTRY_NAME);
-
-        // Remove Task Scheduler entry
-        let _ = Command::new("schtasks")
-            .args(&["/delete", "/tn", "VaRGB_FastBoot", "/f"])
-            .creation_flags(CREATE_NO_WINDOW)
-            .status();
-
-        // Remove Shell Startup folder shortcut
-        if let Ok(appdata) = std::env::var("APPDATA") {
-            let lnk_path = std::path::PathBuf::from(appdata)
-                .join("Microsoft")
-                .join("Windows")
-                .join("Start Menu")
-                .join("Programs")
-                .join("Startup")
-                .join("VaRGB.lnk");
-            let _ = std::fs::remove_file(lnk_path);
-        }
-
         eprintln!("[VaRGB] Startup launch disabled");
     }
 
@@ -184,13 +110,8 @@ fn configure_startup_launch(_enable: bool) -> Result<(), String> {
 }
 
 #[cfg(windows)]
-fn ensure_start_menu_shortcut() {
-    use std::env::current_exe;
-    use std::process::Command;
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-    if let (Ok(appdata), Ok(exe_path)) = (std::env::var("APPDATA"), current_exe()) {
+fn clean_legacy_shortcuts() {
+    if let Ok(appdata) = std::env::var("APPDATA") {
         let programs_dir = std::path::PathBuf::from(&appdata)
             .join("Microsoft")
             .join("Windows")
@@ -198,7 +119,6 @@ fn ensure_start_menu_shortcut() {
             .join("Programs");
 
         if programs_dir.exists() {
-            // Remove old or misleading shortcuts
             let stale_shortcuts = [
                 "VaRGB - vazorism productions.lnk",
                 "tauri-app.lnk",
@@ -209,37 +129,12 @@ fn ensure_start_menu_shortcut() {
                     let _ = std::fs::remove_file(stale_path);
                 }
             }
-
-            let lnk_path = programs_dir.join("VaRGB.lnk");
-            let exe_str = exe_path.to_string_lossy();
-            let parent_dir = exe_path.parent().map(|p| p.to_string_lossy()).unwrap_or_default();
-
-            let ps_script = format!(
-                "$ws = New-Object -ComObject WScript.Shell; \
-                 $s = $ws.CreateShortcut('{}'); \
-                 $s.TargetPath = '{}'; \
-                 $s.Description = 'VaRGB - RGB Lighting Studio'; \
-                 $s.WorkingDirectory = '{}'; \
-                 $s.IconLocation = '{},0'; \
-                 $s.Save()",
-                lnk_path.to_string_lossy().replace('\'', "''"),
-                exe_str.replace('\'', "''"),
-                parent_dir.replace('\'', "''"),
-                exe_str.replace('\'', "''")
-            );
-
-            let _ = Command::new("powershell")
-                .args(&["-NoProfile", "-NonInteractive", "-Command", &ps_script])
-                .creation_flags(CREATE_NO_WINDOW)
-                .status();
-
-            eprintln!("[VaRGB] Verified Start Menu search shortcut at {}", lnk_path.display());
         }
     }
 }
 
 #[cfg(not(windows))]
-fn ensure_start_menu_shortcut() {}
+fn clean_legacy_shortcuts() {}
 
 #[tauri::command]
 fn enable_startup_launch() -> Result<(), String> {
@@ -272,7 +167,6 @@ fn is_startup_launch_enabled() -> Result<bool, String> {
     }
 }
 
-
 fn get_app_storage_path(_app: &tauri::AppHandle, filename: &str) -> Result<PathBuf, String> {
     let base_dir = std::env::var_os("APPDATA")
         .or_else(|| std::env::var_os("LOCALAPPDATA"))
@@ -300,11 +194,28 @@ fn load_persistent_settings(app: tauri::AppHandle) -> Result<Option<String>, Str
 }
 
 #[tauri::command]
-fn save_persistent_settings(app: tauri::AppHandle, settings_json: String) -> Result<(), String> {
+fn save_persistent_settings(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    settings_json: String,
+) -> Result<(), String> {
+    state.engine.update_from_json(&settings_json);
     let path = get_app_storage_path(&app, "settings.json")?;
     fs::write(&path, &settings_json)
         .map_err(|e| format!("Failed to write settings to {}: {e}", path.display()))?;
     eprintln!("[VaRGB] Successfully saved settings.json (len: {})", settings_json.len());
+    Ok(())
+}
+
+#[tauri::command]
+fn sync_active_mode(state: State<AppState>, settings_json: String) -> Result<(), String> {
+    state.engine.update_from_json(&settings_json);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_ui_streaming(state: State<AppState>, streaming: bool) -> Result<(), String> {
+    state.engine.set_ui_streaming(streaming);
     Ok(())
 }
 
@@ -410,118 +321,169 @@ fn disconnect_k630(state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+fn open_or_recreate_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        eprintln!("[VaRGB] Focusing existing main window.");
+    } else {
+        eprintln!("[VaRGB] Re-creating WebView2 window from tray...");
+        let builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+            .title("VaRGB - vazorism productions")
+            .inner_size(1180.0, 820.0)
+            .min_inner_size(900.0, 640.0);
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    // Keep the LED map referenced here so frontend/backend mapping drift is visible
-    // in tests and in code review; each existing frontend key maps to one LED slot.
-    debug_assert_eq!(K630_KEY_IDS.len(), K630_LED_INDICES.len());
-
-    tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            eprintln!("[VaRGB] Secondary instance detected; bringing main window to front.");
-            if let Some(window) = app.get_webview_window("main") {
+        match builder.build() {
+            Ok(window) => {
                 let _ = window.show();
                 let _ = window.unminimize();
                 let _ = window.set_focus();
+                eprintln!("[VaRGB] Successfully rebuilt WebView2 window.");
             }
+            Err(e) => {
+                eprintln!("[VaRGB] Error rebuilding window: {e}");
+            }
+        }
+    }
+
+    if let Some(state) = app.try_state::<AppState>() {
+        state.engine.set_ui_streaming(true);
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    debug_assert_eq!(K630_KEY_IDS.len(), K630_LED_INDICES.len());
+
+    let device_manager = Arc::new(DeviceManager::new());
+    let active_device = Arc::new(Mutex::new(None));
+    let native_engine = engine::NativeEngine::new();
+
+    let app_state = AppState {
+        manager: Arc::clone(&device_manager),
+        active_device: Arc::clone(&active_device),
+        engine: Arc::clone(&native_engine),
+    };
+
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            eprintln!("[VaRGB] Secondary instance detected; bringing main window to front.");
+            open_or_recreate_window(app);
         }))
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            let handle = app.handle().clone();
-            if let Ok(settings_path) = get_app_storage_path(&handle, "settings.json") {
-                if !settings_path.exists() {
-                    let _ = fs::write(&settings_path, "{}");
-                }
-            }
-            if let Ok(presets_path) = get_app_storage_path(&handle, "presets.json") {
-                if !presets_path.exists() {
-                    let _ = fs::write(&presets_path, "[]");
-                }
-            }
+        .setup({
+            let native_engine = Arc::clone(&native_engine);
+            let device_manager = Arc::clone(&device_manager);
+            let active_device = Arc::clone(&active_device);
 
-            #[cfg(windows)]
-            {
-                // Always ensure maximum priority autostart is registered on boot
-                let _ = configure_startup_launch(true);
-                // Ensure Start Menu search shortcut exists and is up to date
-                ensure_start_menu_shortcut();
-            }
+            move |app| {
+                let handle = app.handle().clone();
 
-            // System Tray Setup
-            let show_item = MenuItem::with_id(app, "show", "Open VaRGB", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit VaRGB", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
-
-            let mut tray_builder = TrayIconBuilder::new()
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .tooltip("VaRGB - vazorism productions")
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
+                // Hydrate initial settings into native engine
+                if let Ok(settings_path) = get_app_storage_path(&handle, "settings.json") {
+                    if settings_path.exists() {
+                        if let Ok(data) = fs::read_to_string(&settings_path) {
+                            native_engine.update_from_json(&data);
                         }
+                    } else {
+                        let _ = fs::write(&settings_path, "{}");
                     }
-                    "quit" => {
-                        app.exit(0);
+                }
+
+                if let Ok(presets_path) = get_app_storage_path(&handle, "presets.json") {
+                    if !presets_path.exists() {
+                        let _ = fs::write(&presets_path, "[]");
                     }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
+                }
+
+                #[cfg(windows)]
+                {
+                    let _ = configure_startup_launch(true);
+                    clean_legacy_shortcuts();
+                }
+
+                // System Tray Setup
+                let show_item = MenuItem::with_id(app, "show", "Open VaRGB", true, None::<&str>)?;
+                let quit_item = MenuItem::with_id(app, "quit", "Quit VaRGB", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+                let mut tray_builder = TrayIconBuilder::new()
+                    .menu(&menu)
+                    .show_menu_on_left_click(false)
+                    .tooltip("VaRGB - vazorism productions")
+                    .on_menu_event(|app, event| match event.id.as_ref() {
+                        "show" => {
+                            open_or_recreate_window(app);
                         }
-                    }
+                        "quit" => {
+                            IS_QUITTING.store(true, Ordering::SeqCst);
+                            app.exit(0);
+                        }
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            open_or_recreate_window(tray.app_handle());
+                        }
+                    });
+
+                if let Some(icon) = app.default_window_icon() {
+                    tray_builder = tray_builder.icon(icon.clone());
+                }
+
+                let _tray = tray_builder.build(app)?;
+
+                keyboard_hook::hook::start(app.handle().clone());
+
+                // Start native 30 FPS background streaming loop
+                engine::start_native_engine_loop(
+                    Arc::clone(&native_engine),
+                    Arc::clone(&device_manager),
+                    Arc::clone(&active_device),
+                );
+
+                let is_minimized_boot = std::env::args().any(|arg| {
+                    arg == "--minimized" || arg == "-m" || arg == "--tray"
                 });
 
-            if let Some(icon) = app.default_window_icon() {
-                tray_builder = tray_builder.icon(icon.clone());
-            }
-
-            let _tray = tray_builder.build(app)?;
-
-            keyboard_hook::hook::start(app.handle().clone());
-
-            // App starts inside system tray ONLY if --minimized, -m, or --tray is passed (e.g. at boot autostart).
-            // When opened directly by the user or from Windows Search, always display and focus the window.
-            let is_minimized_boot = std::env::args().any(|arg| arg == "--minimized" || arg == "-m" || arg == "--tray");
-            if let Some(window) = app.get_webview_window("main") {
                 if is_minimized_boot {
-                    let _ = window.hide();
-                    eprintln!("[VaRGB] Started minimized inside system tray.");
+                    native_engine.set_ui_streaming(false);
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.destroy();
+                    }
+                    eprintln!("[VaRGB] Started minimized inside system tray. WebView2 destroyed.");
                 } else {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
-                    eprintln!("[VaRGB] Main window shown.");
+                    native_engine.set_ui_streaming(true);
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                        eprintln!("[VaRGB] Main window displayed.");
+                    }
                 }
-            }
 
-            Ok(())
+                Ok(())
+            }
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // Intercept close event: always hide window to system tray instead of closing app
+                // Intercept close: destroy the window to terminate WebView2 processes entirely
                 api.prevent_close();
-                let _ = window.hide();
+                let app_handle = window.app_handle().clone();
+                if let Some(state) = app_handle.try_state::<AppState>() {
+                    state.engine.set_ui_streaming(false);
+                }
+                let _ = window.destroy();
+                eprintln!("[VaRGB] Window destroyed; WebView2 terminated. Native background engine is streaming.");
             }
         })
-        .manage(AppState {
-            manager: DeviceManager::new(),
-            active_device: Mutex::new(None),
-        })
+        .manage(app_state)
         .manage(audio::AudioService::default())
         .invoke_handler(tauri::generate_handler![
             get_device_status,
@@ -539,8 +501,21 @@ pub fn run() {
             load_persistent_settings,
             save_persistent_settings,
             load_persistent_presets,
-            save_persistent_presets
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+            save_persistent_presets,
+            sync_active_mode,
+            set_ui_streaming
+        ]);
+
+    let app = builder
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { api, .. } = event {
+            // Keep tray and native engine running when the main window is destroyed/closed
+            if !IS_QUITTING.load(Ordering::SeqCst) {
+                api.prevent_exit();
+            }
+        }
+    });
 }

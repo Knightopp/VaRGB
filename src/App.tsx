@@ -17,7 +17,6 @@ import { DEFAULT_MUSIC_PULSE_PARAMS, toAudioAnalyzerConfig } from './engine/effe
 import { hardwareService, DeviceInfo } from './services/hardware';
 import { loadPresets, savePresets, loadPresetsAsync } from './services/presets';
 import { loadSettings, saveSettings, DEFAULT_ACTIVE_PRESETS, loadSettingsAsync } from './services/settings';
-import { LiquidChrome } from './components/LiquidChrome';
 import { K630_LAYOUT } from './engine/layout';
 import { EffectsBrowser } from './components/EffectsBrowser';
 import { ModernLightingWorkspace } from './components/ModernLightingWorkspace';
@@ -28,11 +27,7 @@ import './styles/theme.css';
 import './App.css';
 import './styles/modernLayout.css';
 
-const CHROME_BASE_COLOR: [number, number, number] = [
-  0.047058823529411764,
-  0.043137254901960784,
-  0.043137254901960784,
-];
+
 
 export const App: React.FC = () => {
   const initialSettings = useRef(loadSettings()).current;
@@ -554,15 +549,8 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-modern-root">
-      {/* Dynamic Ambient Background - Persistent Single WebGL Instance */}
-      <div className="modern-app-bg">
-        <LiquidChrome
-          baseColor={CHROME_BASE_COLOR}
-          speed={0.8}
-          amplitude={0.25}
-          interactive={false}
-        />
-      </div>
+      {/* High-Performance Ambient Background (Zero GPU Overhead) */}
+      <div className="modern-app-bg" />
 
       {/* Column 1: Left Navigation Sidebar */}
       <Sidebar
