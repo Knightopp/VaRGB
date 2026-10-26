@@ -286,6 +286,19 @@ export const App: React.FC = () => {
 
     setCurrentParams(newParams);
 
+    // Save immediately so state is guaranteed to persist even on instant window close
+    saveSettings({
+      currentEffectType: type,
+      effectParams: {
+        [type]: newParams,
+      },
+      activePresetId: targetPreset?.id || targetPresetId,
+      activePresetByEffect: {
+        ...activePresetByEffect,
+        [type]: targetPreset?.id || targetPresetId,
+      },
+    });
+
     if (animatorRef.current) {
       const effectInstance = createEffectInstance(type, newParams);
       animatorRef.current.setEffect(effectInstance);
@@ -311,6 +324,13 @@ export const App: React.FC = () => {
         animatorRef.current.setEffect(effectInstance);
       }
     }
+    saveSettings({
+      currentEffectType,
+      effectParams: {
+        [currentEffectType]: newParams,
+      },
+    });
+
     if (currentEffectType === 'music_pulse') {
       const audioConfig = toAudioAnalyzerConfig(newParams as MusicPulseParams);
       void invoke('set_audio_config', { config: audioConfig }).catch(() => undefined);

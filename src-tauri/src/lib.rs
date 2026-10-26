@@ -374,8 +374,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup({
             let native_engine = Arc::clone(&native_engine);
-            let device_manager = Arc::clone(&device_manager);
-            let active_device = Arc::clone(&active_device);
 
             move |app| {
                 let handle = app.handle().clone();
@@ -441,25 +439,16 @@ pub fn run() {
 
                 keyboard_hook::hook::start(app.handle().clone());
 
-                // Start native 30 FPS background streaming loop
-                engine::start_native_engine_loop(
-                    Arc::clone(&native_engine),
-                    Arc::clone(&device_manager),
-                    Arc::clone(&active_device),
-                );
-
                 let is_minimized_boot = std::env::args().any(|arg| {
                     arg == "--minimized" || arg == "-m" || arg == "--tray"
                 });
 
                 if is_minimized_boot {
-                    native_engine.set_ui_streaming(false);
                     if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.destroy();
+                        let _ = window.hide();
                     }
-                    eprintln!("[VaRGB] Started minimized inside system tray. WebView2 destroyed.");
+                    eprintln!("[VaRGB] Started minimized inside system tray.");
                 } else {
-                    native_engine.set_ui_streaming(true);
                     if let Some(window) = app.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.unminimize();
@@ -473,14 +462,10 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // Intercept close: destroy the window to terminate WebView2 processes entirely
+                // Intercept close: hide to tray so active effect continues seamlessly with 0 interruption
                 api.prevent_close();
-                let app_handle = window.app_handle().clone();
-                if let Some(state) = app_handle.try_state::<AppState>() {
-                    state.engine.set_ui_streaming(false);
-                }
-                let _ = window.destroy();
-                eprintln!("[VaRGB] Window destroyed; WebView2 terminated. Native background engine is streaming.");
+                let _ = window.hide();
+                eprintln!("[VaRGB] Window hidden to system tray; chosen lighting effect continues.");
             }
         })
         .manage(app_state)
